@@ -13,6 +13,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "script-linker": "file:../script-linker"
+    "minimist": "^1.2.7",
+    "script-linker": "github:holepunchto/script-linker",
+    "sodium-native": "^3.4.1"
   }
 }
