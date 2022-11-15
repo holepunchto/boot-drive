@@ -1,0 +1,18 @@
+{
+  "name": "boot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "boot.js",
+  "directories": {
+    "example": "example"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "script-linker": "file:../script-linker"
+  }
+}
