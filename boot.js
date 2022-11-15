@@ -1,109 +1,68 @@
-process.on('uncaughtException', console.error)
-
 const fs = require('fs')
 const path = require('path')
+const minimist = require('minimist')
 const ScriptLinker = require('script-linker')
+const builtinModules = new Set(require('module').builtinModules)
 
-const entrypoint = '/index.js' // + fix path
-let resolves = {}
+const argv = minimist(process.argv.slice(2))
+if (!argv.entrypoint) throw new Error('--entrypoint is required')
+
+const entrypoint = path.resolve(argv.entrypoint)
+// const root = path.dirname(entrypoint)
+// const entrypoint = path.join('/', path.basename(entrypoint))
+
+if (argv['add-module']) {
+  const mods = argv['add-module']
+  const addModules = Array.isArray(mods) ? mods : [mods]
+  for (const name of addModules) builtinModules.add(name)
+}
 
 const s = new ScriptLinker({
   cacheSize: Infinity,
   readFile (name) {
-    console.log('readFile', path.join(__dirname, 'example', name))
-    return fs.promises.readFile(path.join(__dirname, 'example', name))
+    // console.log('readFile', name)
+    return fs.promises.readFile(name)
   }
 })
-
-const runtime = ScriptLinker.runtime({
-  resolveSync (resolve, dirname, { isImport }) {
-    return resolveSync(resolve, dirname, { isImport }, ScriptLinker.link.stringify({ protocol: 'resolve', transform: isImport ? 'esm' : 'cjs', resolve, dirname }))
-  },
-  getSync
-})
-
-require = runtime.require
-global.require = runtime.require
 
 main()
 
 async function main () {
+  let first = null
+
   for await (const dep of s.dependencies(entrypoint)) {
-    
+    if (!first) first = dep
   }
 
-  console.log(s.modules)
-  console.log('=========')
-  console.log(s.modules.get(entrypoint)._module.resolutions)
-  console.log(s.modules.get('/node_modules/keypear/index.js')._module.resolutions)
-  console.log(s.modules.get('/node_modules/keypear/storage.js')._module.resolutions)
-  console.log('=========')
+  const cache = {}
+  const nodeRequire = require
 
-  console.log('testing runtime require:')
-  require('keypear')
-  console.log('after runtime require')
+  run(first.module)
 
-  // eval(s.modules.get(entrypoint).source)
-}
+  function run (mod) {
+    if (cache[mod.filename]) return cache[mod.filename]
 
-function resolveSync (resolve, dirname, { isImport }, url) {
-  const u = ScriptLinker.link.parse(url)
-  console.log('resolveSync', resolve, dirname, { isImport }, url, u) /* => {
-    protocol: 'resolve',
-    transform: 'cjs',
-    resolve: 'keypear',
-    dirname: '/',
-    filename: null
-  } */
-
-  // resolve => './storage'
-
-  if (u.filename) {
-    if (resolves[resolve]) {
-      console.log('preresolution match', resolve, resolves[resolve])
-      return resolves[resolve]
+    const m = cache[mod.filename] = {
+      exports: {}
     }
 
-    return u.filename // => '/node_modules/keypear~./storage'
-  }
+    require.cache = cache
 
-  const { resolutions } = s.modules.get(entrypoint)._module
-  for (const resolution of resolutions) {
-    if (resolution.input === u.resolve) { // 'keypear' === 'keypear'
-      console.log('resolution match', resolution.input, resolution.output)
+    const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', mod.source)
+    wrap(require, mod.dirname, mod.filename, m, m.exports)
 
-      preresolution(resolution.output)
+    return m
 
-      return resolution.output // => '/node_modules/keypear/index.js'
+    function require (req) {
+      if (builtinModules.has(req)) {
+        return nodeRequire(req)
+      }
+
+      for (const r of mod.resolutions) {
+        if (r.input === req) {
+          return run(s.modules.get(r.output)).exports
+        }
+      }
     }
   }
-
-  console.log('resolveSync failed!')
-  return null // ?
-}
-
-function getSync (url) {
-  const u = ScriptLinker.link.parse(url)
-  console.log('getSync', url, u)
-
-  if (u.filename) {
-    return s.modules.get(u.filename).source
-  }
-
-  /* if (url === 'app://cjs/node_modules/keypear/index.js') {
-    return s.modules.get(u.filename).source
-  } */
-
-  return null // ?
-}
-
-function preresolution (filename) {
-  resolves = {} // clear
-
-  const { resolutions } = s.modules.get(filename)._module
-  for (const resolution of resolutions) {
-    resolves[resolution.input] = resolution.output
-  }
-
-  console.log('preresolution', resolves)
 }
