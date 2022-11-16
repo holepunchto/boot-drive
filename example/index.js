@@ -1,6 +1,6 @@
-const Keychain = require('keypear')
+/* const Keychain = require('keypear')
 const keys = new Keychain()
-console.log('keys', keys.get().publicKey.toString('hex'))
+console.log('keys', keys.get().publicKey.toString('hex')) */
 
 const z32 = require('z32')
 console.log('z32', z32.decode('gr3ugpa'))
