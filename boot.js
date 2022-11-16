@@ -6,6 +6,8 @@ const builtinModules = new Set(require('module').builtinModules)
 const Hyperdrive = require('hyperdrive')
 const Corestore = require('corestore')
 
+// node boot.js --store ./drive-corestore --entrypoint /index.js
+
 const argv = minimist(process.argv.slice(2))
 if (!argv.store) throw new Error('--store <path to corestore> is required')
 if (!argv.entrypoint) throw new Error('--entrypoint <main filename of drive> is required')
