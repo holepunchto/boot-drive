@@ -1,3 +1,5 @@
+'use strict'
+
 const ScriptLinker = require('script-linker')
 const { builtinModules } = require('module')
 const path = require('path')
