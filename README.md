@@ -8,7 +8,6 @@ npm i holepunchto/boot
 
 ## Usage
 ```js
-const drive = new Hyperdrive(store)
 const boot = new Boot(drive)
 await boot.start()
 ```
