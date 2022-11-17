@@ -25,7 +25,7 @@ Available `options`:
 }
 ```
 
-`modules` is used to add more modules.
+`modules` is used to add more native modules.
 
 #### `drive.modules`
 
