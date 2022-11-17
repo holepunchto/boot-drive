@@ -5,7 +5,7 @@ const path = require('path')
 module.exports = class Boot {
   constructor (drive, opts = {}) {
     this.drive = drive
-    this.builtinModules = new Set(require('module').builtinModules)
+    this.modules = new Set(require('module').builtinModules)
 
     this.linker = new ScriptLinker({
       cacheSize: Infinity,
@@ -16,11 +16,7 @@ module.exports = class Boot {
       }
     })
 
-    if (opts.modules) for (const name of opts.modules) this.addModule(name)
-  }
-
-  addModule (name) {
-    this.builtinModules.add(name)
+    if (opts.modules) for (const name of opts.modules) this.modules.add(name)
   }
 
   async start (entrypoint) {
