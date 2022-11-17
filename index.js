@@ -60,6 +60,7 @@ module.exports = class Boot {
 
         for (const r of mod.resolutions) {
           if (r.input === req) {
+            if (!r.output) throw new Error('MODULE_NOT_FOUND: ' + r.input)
             return run(linker.modules.get(r.output)).exports
           }
         }
