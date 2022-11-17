@@ -48,7 +48,7 @@ module.exports = class Boot {
 
       require.cache = cache
 
-      const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', mod.source)
+      const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', mod.source) // eslint-disable-line no-new-func
       wrap(require, mod.dirname, mod.filename, m, m.exports)
 
       return m
