@@ -37,7 +37,7 @@ module.exports = class Boot {
     const nodeRequire = require
     const { linker, modules } = this
 
-    run(first.module)
+    return run(first.module)
 
     function run (mod) {
       if (cache[mod.filename]) return cache[mod.filename]
