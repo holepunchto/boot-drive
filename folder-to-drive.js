@@ -15,7 +15,7 @@ const corestore = new Corestore(argv.store)
 const src = new Localdrive(argv.input)
 const dst = new Hyperdrive(corestore)
 
-console.log('Cloning folder (' + argv.input + ') into hyperdrive (' + argv.store +')')
+console.log('Cloning folder (' + argv.input + ') into hyperdrive (' + argv.store + ')')
 
 const mirror = new MirrorDrive(src, dst)
 mirror.done().then(() => console.log('Done.', mirror.count))
