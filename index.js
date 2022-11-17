@@ -5,7 +5,7 @@ const path = require('path')
 module.exports = class Boot {
   constructor (drive, opts = {}) {
     this.drive = drive
-    this.modules = new Set(require('module').builtinModules)
+    this.modules = new Set(builtinModules)
 
     this.linker = new ScriptLinker({
       cacheSize: Infinity,
@@ -35,7 +35,7 @@ module.exports = class Boot {
 
     const cache = {}
     const nodeRequire = require
-    const { linker, builtinModules } = this
+    const { linker, modules } = this
 
     run(first.module)
 
@@ -54,7 +54,7 @@ module.exports = class Boot {
       return m
 
       function require (req) {
-        if (builtinModules.has(req)) {
+        if (modules.has(req)) {
           return nodeRequire(req)
         }
 
