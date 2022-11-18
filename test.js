@@ -26,7 +26,6 @@ test('entrypoint from package.json', async function (t) {
 test('require file within drive', async function (t) {
   const { drive } = create()
 
-  // + require("func.js") doesn't work
   await drive.put('/index.js', Buffer.from(`
     const func = require("./func.js")
     module.exports = func()
