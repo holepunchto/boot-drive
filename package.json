@@ -21,9 +21,11 @@
     "script-linker": "github:holepunchto/script-linker"
   },
   "devDependencies": {
+    "@hyperswarm/testnet": "^3.1.0",
     "brittle": "^3.1.0",
     "corestore": "^6.2.0",
     "hyperdrive": "^11.0.0-alpha.9",
+    "hyperswarm": "^4.3.5",
     "random-access-memory": "^6.0.0",
     "standard": "^17.0.0"
   }
