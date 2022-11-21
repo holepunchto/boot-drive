@@ -1,3 +1,5 @@
+'use strict'
+
 const test = require('brittle')
 const Boot = require('./index.js')
 const RAM = require('random-access-memory')
