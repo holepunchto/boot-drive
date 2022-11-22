@@ -3,11 +3,15 @@
 const ScriptLinker = require('script-linker')
 const { builtinModules } = require('module')
 const path = require('path')
+const fs = require('fs')
+const fsp = require('fs/promises')
+
+const approvedModules = new Set(['sodium-native'])
 
 module.exports = class Boot {
   constructor (drive, opts = {}) {
     this.drive = drive
-    this.modules = new Set(builtinModules)
+    this.modules = new Set([...builtinModules/* , ...approvedModules */])
 
     this.linker = new ScriptLinker({
       cacheSize: Infinity,
@@ -33,6 +37,39 @@ module.exports = class Boot {
 
     for await (const dep of this.linker.dependencies(entrypoint)) {
       if (!first) first = dep
+
+      const name = dep.module._moduleInfo?.package?.name
+
+      if (approvedModules.has(name)) {
+        const filename = path.join('prebuilds', process.platform + '-' + process.arch, 'node.napi.node')
+        const binding = await this.drive.get(path.join(dep.module.dirname, filename))
+
+        await fsp.mkdir(path.dirname(filename), { recursive: true })
+        fs.writeFileSync(filename, binding) // + async
+      }
+
+      /* if (name === 'node-gyp-build') {
+        dep.module.source = `
+        const path = require('path')
+
+        module.exports = (dirname) => {
+          console.log(dirname) // => '/node_modules/sodium-native'
+          const filename = path.join(dirname, 'prebuilds', process.platform + '-' + process.arch, 'node.napi.node')
+          console.log(filename)
+
+          const p = path.parse(filename)
+          console.log()
+
+          const dirWithoutRoot = p.dir.replace(p.root, '')
+          const binding = path.join(dirWithoutRoot, p.base)
+          console.log(binding)
+
+          console.log('module', require(binding))
+
+          return require(binding)
+        }
+        `
+      } */
     }
 
     const cache = {}
@@ -63,10 +100,34 @@ module.exports = class Boot {
         for (const r of mod.resolutions) {
           if (r.input === req) {
             if (!r.output) throw new Error('MODULE_NOT_FOUND: ' + r.input)
+            if (req === 'node-gyp-build') {
+              console.log('about to run node-gyp-build', process.cwd(), r.output)
+              return customBinding
+            }
             return run(linker.modules.get(r.output)).exports
           }
         }
       }
     }
   }
+}
+
+function customBinding (dirname) {
+  console.log('customBinding', { dirname }, process.cwd())
+  // var sodium = require('node-gyp-build')(__dirname)
+
+  console.log(dirname) // => '/node_modules/sodium-native'
+  console.log(process.cwd()) // => '/home/lucas/Desktop/boot-example'
+  const filename = path.join(process.cwd(), 'prebuilds', process.platform + '-' + process.arch, 'node.napi.node')
+  console.log(filename)
+
+  const p = path.parse(filename)
+  console.log('p', p)
+
+  // const dirWithoutRoot = p.dir.replace(p.root, '')
+  // const binding = path.join(dirWithoutRoot, p.base)
+  const binding = filename
+  console.log('binding', binding)
+
+  return require(binding)
 }
