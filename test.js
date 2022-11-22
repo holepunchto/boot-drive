@@ -40,7 +40,7 @@ test('require file within drive', async function (t) {
   t.alike(await boot.start('/index.js'), { exports: 'hello func' })
 })
 
-test.solo('require module with prebuilds', async function (t) {
+test('require module with prebuilds', async function (t) {
   const { drive } = create()
 
   const src = new Localdrive(__dirname)
