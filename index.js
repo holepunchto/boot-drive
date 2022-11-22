@@ -27,6 +27,26 @@ module.exports = class Boot {
     if (opts.modules) for (const name of opts.modules) this.modules.add(name)
   }
 
+  async _savePrebuildToDisk (mod) {
+    const hasBuilds = mod.resolutions.some(r => r.input === 'node-gyp-build')
+
+    if (hasBuilds) {
+      try {
+        const entrypath = mod.dirname + '/prebuilds/' + process.platform + '-' + process.arch + '/node.napi.node'
+        const buffer = await this.drive.get(entrypath)
+
+        const filename = path.join(this.prebuildsPath, mod.package?.name + '-' + generichash(buffer) + '.node')
+        const exists = await fileExists(filename)
+        if (!exists) {
+          await fsp.mkdir(this.prebuildsPath, { recursive: true })
+          await atomicWriteFile(filename, buffer)
+        }
+
+        this.prebuilds.set(mod.dirname, path.resolve(filename))
+      } catch {}
+    }
+  }
+
   async start (entrypoint) {
     if (!entrypoint) {
       const pkg = await this.drive.get('/package.json')
@@ -40,22 +60,7 @@ module.exports = class Boot {
     for await (const dep of this.linker.dependencies(entrypoint)) {
       if (!first) first = dep
 
-      const hasBuilds = dep.module.resolutions.some(r => r.input === 'node-gyp-build')
-      if (hasBuilds) {
-        try {
-          const entrypath = dep.module.dirname + '/prebuilds/' + process.platform + '-' + process.arch + '/node.napi.node'
-          const buffer = await this.drive.get(entrypath)
-
-          const filename = path.join(this.prebuildsPath, dep.module.package?.name + '-' + generichash(buffer) + '.node')
-          const exists = await fileExists(filename)
-          if (!exists) {
-            await fsp.mkdir(this.prebuildsPath, { recursive: true })
-            await atomicWriteFile(filename, buffer)
-          }
-
-          this.prebuilds.set(dep.module.dirname, path.resolve(filename))
-        } catch {}
-      }
+      await this._savePrebuildToDisk(dep.module)
     }
 
     const self = this
