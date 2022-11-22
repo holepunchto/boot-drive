@@ -49,9 +49,13 @@ test.solo('require module with prebuilds', async function (t) {
   const m3 = new MirrorDrive(src, drive, { prefix: 'node_modules/b4a' })
   await Promise.all([m1.done(), m2.done(), m3.done()])
 
+  const sodium = require('sodium-native')
+  sodium.$used = true
+
   await drive.put('/index.js', Buffer.from(`
     const sodium = require("sodium-native")
     const b4a = require("b4a")
+    if (sodium.$used) throw new Error("sodium-native was already imported before")
     const buffer = b4a.allocUnsafe(32)
     sodium.randombytes_buf(buffer)
     module.exports = buffer.toString('hex').length
