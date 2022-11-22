@@ -49,7 +49,6 @@ module.exports = class Boot {
       }
     }
 
-    const self = this
     const cache = {}
     const nodeRequire = require
     const { linker, modules } = this
