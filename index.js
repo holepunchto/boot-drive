@@ -51,9 +51,7 @@ module.exports = class Boot {
           await fsp.writeFile(filename, buffer)
 
           prebuilds.set(dep.module.dirname, path.resolve(filename))
-        } catch (error) {
-          console.error(error) // + temp
-        }
+        } catch {}
       }
     }
 
