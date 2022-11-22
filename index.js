@@ -98,7 +98,7 @@ function customBinding (dirname) {
 }
 
 async function atomicWriteFile (filename, buffer) {
-  const tmpfile = filename + '.tmp.' + crypto.randomBytes(16).toString('hex')
+  const tmpfile = filename + '.tmp.' + Math.random()
   await fsp.writeFile(tmpfile, buffer, { flags: 'wx' })
   await fsp.rename(tmpfile, filename)
 }
