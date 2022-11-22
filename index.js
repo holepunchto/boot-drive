@@ -6,12 +6,11 @@ const fsp = require('fs/promises')
 const crypto = require('crypto')
 const ScriptLinker = require('script-linker')
 
-const prebuilds = new Map()
-
 module.exports = class Boot {
   constructor (drive, opts = {}) {
     this.drive = drive
     this.modules = new Set(builtinModules)
+    this.prebuilds = new Map()
 
     this.linker = new ScriptLinker({
       cacheSize: Infinity,
@@ -51,7 +50,7 @@ module.exports = class Boot {
             await atomicWriteFile(filename, buffer)
           }
 
-          prebuilds.set(dep.module.dirname, path.resolve(filename))
+          this.prebuilds.set(dep.module.dirname, path.resolve(filename))
         } catch {}
       }
     }
@@ -84,7 +83,7 @@ module.exports = class Boot {
         for (const r of mod.resolutions) {
           if (r.input === req) {
             if (!r.output) throw new Error('MODULE_NOT_FOUND: ' + r.input)
-            if (req === 'node-gyp-build') return customBinding
+            if (req === 'node-gyp-build') return customBinding.bind(this)
             return run(linker.modules.get(r.output)).exports
           }
         }
@@ -94,7 +93,7 @@ module.exports = class Boot {
 }
 
 function customBinding (dirname) {
-  return require(prebuilds.get(dirname))
+  return require(this.prebuilds.get(dirname))
 }
 
 async function atomicWriteFile (filename, buffer) {
