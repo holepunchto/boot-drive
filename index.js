@@ -87,16 +87,22 @@ module.exports = class Boot {
           return nodeRequire(req)
         }
 
-        for (const r of mod.resolutions) {
-          if (r.input === req) {
-            if (!r.output) throw new Error('MODULE_NOT_FOUND: ' + r.input)
-            if (req === 'node-gyp-build') return customBinding.bind(self)
-            return run(linker.modules.get(r.output)).exports
-          }
-        }
+        const output = resolve(mod, req)
+        if (req === 'node-gyp-build') return customBinding.bind(self)
+        return run(linker.modules.get(output)).exports
       }
     }
   }
+}
+
+function resolve (mod, input) {
+  for (const r of mod.resolutions) {
+    if (r.input === input) {
+      if (!r.output) break
+      return r.output
+    }
+  }
+  throw new Error('Could not resolve ' + input + ' from ' + mod.dirname)
 }
 
 function customBinding (dirname) {
