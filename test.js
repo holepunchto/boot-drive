@@ -5,6 +5,8 @@ const Boot = require('./index.js')
 const RAM = require('random-access-memory')
 const Corestore = require('corestore')
 const Hyperdrive = require('hyperdrive')
+const Localdrive = require('localdrive')
+const MirrorDrive = require('mirror-drive')
 
 test('basic', async function (t) {
   const { drive } = create()
@@ -36,6 +38,25 @@ test('require file within drive', async function (t) {
 
   const boot = new Boot(drive)
   t.alike(await boot.start('/index.js'), { exports: 'hello func' })
+})
+
+test.solo('require module with prebuilds', async function (t) {
+  const { drive } = create()
+
+  const src = new Localdrive('./')
+  const m1 = new MirrorDrive(src, drive, { prefix: 'node_modules/sodium-native' })
+  const m2 = new MirrorDrive(src, drive, { prefix: 'node_modules/node-gyp-build' })
+  await Promise.all([m1.done(), m2.done()])
+
+  await drive.put('/index.js', Buffer.from(`
+    const sodium = require("sodium-native")
+    const buffer = Buffer.alloc(32)
+    sodium.randombytes_buf(buffer)
+    module.exports = buffer.toString('hex').length
+  `))
+
+  const boot = new Boot(drive)
+  t.alike(await boot.start('/index.js'), { exports: 64 })
 })
 
 function create () {
