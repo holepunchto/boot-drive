@@ -1,12 +1,10 @@
 'use strict'
 
-const ScriptLinker = require('script-linker')
 const { builtinModules } = require('module')
 const path = require('path')
-const fs = require('fs')
 const fsp = require('fs/promises')
-
-const approvedModules = new Set(['sodium-native'])
+const crypto = require('crypto')
+const ScriptLinker = require('script-linker')
 
 module.exports = class Boot {
   constructor (drive, opts = {}) {
@@ -39,16 +37,19 @@ module.exports = class Boot {
       if (!first) first = dep
 
       const name = dep.module._moduleInfo?.package?.name
+      const hasBuilds = dep.module.resolutions.some(r => r.input === 'node-gyp-build')
 
-      if (approvedModules.has(name)) {
-        const filename = path.join('prebuilds', process.platform + '-' + process.arch, 'node.napi.node')
-        const binding = await this.drive.get(path.join(dep.module.dirname, filename))
+      if (hasBuilds) {
+        try {
+          const entrypath = path.join(dep.module.dirname, 'prebuilds', process.platform + '-' + process.arch, 'node.napi.node')
+          const buffer = await this.drive.get(entrypath)
 
-        await fsp.mkdir(path.dirname(filename), { recursive: true })
-        fs.writeFileSync(filename, binding) // + async
+          await fsp.writeFile(path.join('prebuilds', name + '-' + sha1(buffer) + '.node'), buffer)
+        } catch {}
       }
     }
 
+    const self = this
     const cache = {}
     const nodeRequire = require
     const { linker, modules } = this
@@ -89,4 +90,8 @@ module.exports = class Boot {
 function customBinding (dirname) {
   const filename = path.join(process.cwd(), 'prebuilds', process.platform + '-' + process.arch, 'node.napi.node')
   return require(filename)
+}
+
+function sha1 (data) {
+  return crypto.createHash('sha1').update(data).digest('hex')
 }
