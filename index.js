@@ -55,6 +55,7 @@ module.exports = class Boot {
       }
     }
 
+    const self = this
     const cache = {}
     const nodeRequire = require
     const { linker, modules } = this
@@ -83,7 +84,7 @@ module.exports = class Boot {
         for (const r of mod.resolutions) {
           if (r.input === req) {
             if (!r.output) throw new Error('MODULE_NOT_FOUND: ' + r.input)
-            if (req === 'node-gyp-build') return customBinding.bind(this)
+            if (req === 'node-gyp-build') return customBinding.bind(self)
             return run(linker.modules.get(r.output)).exports
           }
         }
