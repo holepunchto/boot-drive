@@ -38,14 +38,13 @@ module.exports = class Boot {
     for await (const dep of this.linker.dependencies(entrypoint)) {
       if (!first) first = dep
 
-      const name = dep.module._moduleInfo?.package?.name
       const hasBuilds = dep.module.resolutions.some(r => r.input === 'node-gyp-build')
-
       if (hasBuilds) {
         try {
           const entrypath = path.join(dep.module.dirname, 'prebuilds', process.platform + '-' + process.arch, 'node.napi.node')
           const buffer = await this.drive.get(entrypath)
 
+          const name = dep.module._moduleInfo?.package?.name
           const filename = path.join('prebuilds', name + '-' + sha1(buffer) + '.node')
           await fsp.mkdir(path.dirname(filename), { recursive: true })
           await fsp.writeFile(filename, buffer)
