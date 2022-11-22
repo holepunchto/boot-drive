@@ -1,5 +1,5 @@
 {
-  "name": "boot",
+  "name": "boot-drive",
   "version": "0.0.0",
   "description": "",
   "main": "index.js",
@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/holepunchto/boot.git"
+    "url": "https://github.com/holepunchto/boot-drive.git"
   },
   "author": "",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/holepunchto/boot/issues"
+    "url": "https://github.com/holepunchto/boot-drive/issues"
   },
-  "homepage": "https://github.com/holepunchto/boot",
+  "homepage": "https://github.com/holepunchto/boot-drive",
   "dependencies": {
     "b4a": "^1.6.1",
     "script-linker": "github:holepunchto/script-linker",

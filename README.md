@@ -3,7 +3,7 @@
 Boot a hyperdrive from memory.
 
 ```
-npm i holepunchto/boot
+npm i boot-drive
 ```
 
 ## Usage
