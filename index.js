@@ -11,7 +11,7 @@ const approvedModules = new Set(['sodium-native'])
 module.exports = class Boot {
   constructor (drive, opts = {}) {
     this.drive = drive
-    this.modules = new Set([...builtinModules/* , ...approvedModules */])
+    this.modules = new Set(builtinModules)
 
     this.linker = new ScriptLinker({
       cacheSize: Infinity,
@@ -47,29 +47,6 @@ module.exports = class Boot {
         await fsp.mkdir(path.dirname(filename), { recursive: true })
         fs.writeFileSync(filename, binding) // + async
       }
-
-      /* if (name === 'node-gyp-build') {
-        dep.module.source = `
-        const path = require('path')
-
-        module.exports = (dirname) => {
-          console.log(dirname) // => '/node_modules/sodium-native'
-          const filename = path.join(dirname, 'prebuilds', process.platform + '-' + process.arch, 'node.napi.node')
-          console.log(filename)
-
-          const p = path.parse(filename)
-          console.log()
-
-          const dirWithoutRoot = p.dir.replace(p.root, '')
-          const binding = path.join(dirWithoutRoot, p.base)
-          console.log(binding)
-
-          console.log('module', require(binding))
-
-          return require(binding)
-        }
-        `
-      } */
     }
 
     const cache = {}
@@ -100,10 +77,7 @@ module.exports = class Boot {
         for (const r of mod.resolutions) {
           if (r.input === req) {
             if (!r.output) throw new Error('MODULE_NOT_FOUND: ' + r.input)
-            if (req === 'node-gyp-build') {
-              console.log('about to run node-gyp-build', process.cwd(), r.output)
-              return customBinding
-            }
+            if (req === 'node-gyp-build') return customBinding
             return run(linker.modules.get(r.output)).exports
           }
         }
@@ -113,21 +87,6 @@ module.exports = class Boot {
 }
 
 function customBinding (dirname) {
-  console.log('customBinding', { dirname }, process.cwd())
-  // var sodium = require('node-gyp-build')(__dirname)
-
-  console.log(dirname) // => '/node_modules/sodium-native'
-  console.log(process.cwd()) // => '/home/lucas/Desktop/boot-example'
   const filename = path.join(process.cwd(), 'prebuilds', process.platform + '-' + process.arch, 'node.napi.node')
-  console.log(filename)
-
-  const p = path.parse(filename)
-  console.log('p', p)
-
-  // const dirWithoutRoot = p.dir.replace(p.root, '')
-  // const binding = path.join(dirWithoutRoot, p.base)
-  const binding = filename
-  console.log('binding', binding)
-
-  return require(binding)
+  return require(filename)
 }
