@@ -44,8 +44,7 @@ module.exports = class Boot {
           const entrypath = path.join(dep.module.dirname, 'prebuilds', process.platform + '-' + process.arch, 'node.napi.node')
           const buffer = await this.drive.get(entrypath)
 
-          const name = dep.module._moduleInfo?.package?.name
-          const filename = path.join('prebuilds', name + '-' + sha1(buffer) + '.node')
+          const filename = path.join('prebuilds', dep.module.package?.name + '-' + sha1(buffer) + '.node')
           const exists = await fileExists(filename)
           if (!exists) {
             await fsp.mkdir(path.dirname(filename), { recursive: true })
