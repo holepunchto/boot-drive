@@ -43,7 +43,7 @@ test('require file within drive', async function (t) {
 test.solo('require module with prebuilds', async function (t) {
   const { drive } = create()
 
-  const src = new Localdrive('./')
+  const src = new Localdrive(__dirname)
   const m1 = new MirrorDrive(src, drive, { prefix: 'node_modules/sodium-native' })
   const m2 = new MirrorDrive(src, drive, { prefix: 'node_modules/node-gyp-build' })
   await Promise.all([m1.done(), m2.done()])
