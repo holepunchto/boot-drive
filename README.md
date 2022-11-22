@@ -8,6 +8,8 @@ npm i boot-drive
 
 ## Usage
 ```js
+const Boot = require('boot-drive')
+
 const boot = new Boot(drive)
 await boot.start()
 ```
