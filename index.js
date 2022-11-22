@@ -44,8 +44,12 @@ module.exports = class Boot {
           const entrypath = path.join(dep.module.dirname, 'prebuilds', process.platform + '-' + process.arch, 'node.napi.node')
           const buffer = await this.drive.get(entrypath)
 
-          await fsp.writeFile(path.join('prebuilds', name + '-' + sha1(buffer) + '.node'), buffer)
-        } catch {}
+          const filename = path.join('prebuilds', name + '-' + sha1(buffer) + '.node')
+          await fsp.mkdir(path.dirname(filename), { recursive: true })
+          await fsp.writeFile(filename, buffer)
+        } catch (error) {
+          console.error(error) // + temp
+        }
       }
     }
 
