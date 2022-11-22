@@ -21,11 +21,13 @@ Creates a bootloader to run the drive.
 Available `options`:
 ```js
 {
-  modules: []
+  modules: [],
+  prebuildsPath: 'prebuilds'
 }
 ```
 
 `modules` is used to add more native modules.
+`prebuildsPath` is where binding prebuilds are stored (default: `./prebuilds`).
 
 #### `drive.modules`
 

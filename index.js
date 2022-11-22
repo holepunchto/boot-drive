@@ -10,6 +10,8 @@ module.exports = class Boot {
   constructor (drive, opts = {}) {
     this.drive = drive
     this.modules = new Set(builtinModules)
+
+    this.prebuildsPath = opts.prebuildsPath || 'prebuilds'
     this.prebuilds = new Map()
 
     this.linker = new ScriptLinker({
@@ -43,7 +45,7 @@ module.exports = class Boot {
           const entrypath = dep.module.dirname + '/prebuilds/' + process.platform + '-' + process.arch + '/node.napi.node'
           const buffer = await this.drive.get(entrypath)
 
-          const filename = path.join('prebuilds', dep.module.package?.name + '-' + sha1(buffer) + '.node')
+          const filename = path.join(this.prebuildsPath, dep.module.package?.name + '-' + sha1(buffer) + '.node')
           const exists = await fileExists(filename)
           if (!exists) {
             await fsp.mkdir(path.dirname(filename), { recursive: true })
