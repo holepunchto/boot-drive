@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/holepunchto/boot",
   "dependencies": {
+    "b4a": "^1.6.1",
     "script-linker": "github:holepunchto/script-linker",
     "sodium-native": "^3.4.1"
   },

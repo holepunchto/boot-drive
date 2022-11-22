@@ -5,6 +5,7 @@ const path = require('path')
 const fsp = require('fs/promises')
 const ScriptLinker = require('script-linker')
 const sodium = require('sodium-native')
+const b4a = require('b4a')
 
 module.exports = class Boot {
   constructor (drive, opts = {}) {
@@ -115,7 +116,7 @@ async function fileExists (filename) {
 }
 
 function generichash (data) {
-  const out = Buffer.alloc(32)
+  const out = b4a.alloc(32)
   sodium.crypto_generichash(out, data)
   return out.toString('hex')
 }
