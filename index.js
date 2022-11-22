@@ -46,8 +46,11 @@ module.exports = class Boot {
 
           const name = dep.module._moduleInfo?.package?.name
           const filename = path.join('prebuilds', name + '-' + sha1(buffer) + '.node')
-          await fsp.mkdir(path.dirname(filename), { recursive: true })
-          await fsp.writeFile(filename, buffer)
+          const exists = await fileExists(filename)
+          if (!exists) {
+            await fsp.mkdir(path.dirname(filename), { recursive: true })
+            await atomicWriteFile(filename, buffer)
+          }
 
           prebuilds.set(dep.module.dirname, path.resolve(filename))
         } catch {}
@@ -93,6 +96,21 @@ module.exports = class Boot {
 
 function customBinding (dirname) {
   return require(prebuilds.get(dirname))
+}
+
+async function atomicWriteFile (filename, buffer) {
+  const tmpfile = filename + '.tmp.' + crypto.randomBytes(16).toString('hex')
+  await fsp.writeFile(tmpfile, buffer, { flags: 'wx' })
+  await fsp.rename(tmpfile, filename)
+}
+
+async function fileExists (filename) {
+  try {
+    await fsp.stat(filename)
+  } catch (error) {
+    if (error.code === 'ENOENT') return false
+  }
+  return true
 }
 
 function sha1 (data) {
