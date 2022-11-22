@@ -119,7 +119,7 @@ async function fileExists (filename) {
 }
 
 function generichash (data) {
-  const out = b4a.alloc(32)
+  const out = b4a.allocUnsafe(32)
   sodium.crypto_generichash(out, data)
   return out.toString('hex')
 }

@@ -52,7 +52,7 @@ test.solo('require module with prebuilds', async function (t) {
   await drive.put('/index.js', Buffer.from(`
     const sodium = require("sodium-native")
     const b4a = require("b4a")
-    const buffer = b4a.alloc(32)
+    const buffer = b4a.allocUnsafe(32)
     sodium.randombytes_buf(buffer)
     module.exports = buffer.toString('hex').length
   `))
