@@ -48,7 +48,7 @@ module.exports = class Boot {
           const filename = path.join(this.prebuildsPath, dep.module.package?.name + '-' + generichash(buffer) + '.node')
           const exists = await fileExists(filename)
           if (!exists) {
-            await fsp.mkdir(path.dirname(filename), { recursive: true })
+            await fsp.mkdir(this.prebuildsPath, { recursive: true })
             await atomicWriteFile(filename, buffer)
           }
 
