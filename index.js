@@ -3,8 +3,8 @@
 const { builtinModules } = require('module')
 const path = require('path')
 const fsp = require('fs/promises')
-const crypto = require('crypto')
 const ScriptLinker = require('script-linker')
+const sodium = require('sodium-native')
 
 module.exports = class Boot {
   constructor (drive, opts = {}) {
@@ -45,7 +45,7 @@ module.exports = class Boot {
           const entrypath = dep.module.dirname + '/prebuilds/' + process.platform + '-' + process.arch + '/node.napi.node'
           const buffer = await this.drive.get(entrypath)
 
-          const filename = path.join(this.prebuildsPath, dep.module.package?.name + '-' + sha1(buffer) + '.node')
+          const filename = path.join(this.prebuildsPath, dep.module.package?.name + '-' + generichash(buffer) + '.node')
           const exists = await fileExists(filename)
           if (!exists) {
             await fsp.mkdir(path.dirname(filename), { recursive: true })
@@ -114,6 +114,8 @@ async function fileExists (filename) {
   return true
 }
 
-function sha1 (data) {
-  return crypto.createHash('sha1').update(data).digest('hex')
+function generichash (data) {
+  const out = Buffer.alloc(32)
+  sodium.crypto_generichash(out, data)
+  return out.toString('hex')
 }
