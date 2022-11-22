@@ -31,19 +31,18 @@ module.exports = class Boot {
     const hasBuilds = mod.resolutions.some(r => r.input === 'node-gyp-build')
 
     if (hasBuilds) {
-      try {
-        const entrypath = mod.dirname + '/prebuilds/' + process.platform + '-' + process.arch + '/node.napi.node'
-        const buffer = await this.drive.get(entrypath)
+      const entrypath = mod.dirname + '/prebuilds/' + process.platform + '-' + process.arch + '/node.napi.node'
+      const buffer = await this.drive.get(entrypath)
+      if (!buffer) return
 
-        const filename = path.join(this.prebuildsPath, mod.package?.name + '-' + generichash(buffer) + '.node')
-        const exists = await fileExists(filename)
-        if (!exists) {
-          await fsp.mkdir(this.prebuildsPath, { recursive: true })
-          await atomicWriteFile(filename, buffer)
-        }
+      const filename = path.join(this.prebuildsPath, mod.package?.name + '-' + generichash(buffer) + '.node')
+      const exists = await fileExists(filename)
+      if (!exists) {
+        await fsp.mkdir(this.prebuildsPath, { recursive: true })
+        await atomicWriteFile(filename, buffer)
+      }
 
-        this.prebuilds.set(mod.dirname, path.resolve(filename))
-      } catch {}
+      this.prebuilds.set(mod.dirname, path.resolve(filename))
     }
   }
 
