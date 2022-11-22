@@ -3,11 +3,13 @@
 Boot a hyperdrive from memory.
 
 ```
-npm i holepunchto/boot
+npm i boot-drive
 ```
 
 ## Usage
 ```js
+const Boot = require('boot-drive')
+
 const boot = new Boot(drive)
 await boot.start()
 ```
@@ -21,11 +23,13 @@ Creates a bootloader to run the drive.
 Available `options`:
 ```js
 {
-  modules: []
+  modules: [],
+  prebuildsPath: 'prebuilds'
 }
 ```
 
 `modules` is used to add more native modules.
+`prebuildsPath` is where binding prebuilds are stored (default: `./prebuilds`).
 
 #### `drive.modules`
 
