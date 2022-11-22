@@ -1,5 +1,5 @@
 const minimist = require('minimist')
-const Boot = require('./boot.js')
+const Boot = require('../index.js')
 const Hyperdrive = require('hyperdrive')
 const Corestore = require('corestore')
 const RAM = require('random-access-memory')
