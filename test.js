@@ -46,11 +46,13 @@ test.solo('require module with prebuilds', async function (t) {
   const src = new Localdrive(__dirname)
   const m1 = new MirrorDrive(src, drive, { prefix: 'node_modules/sodium-native' })
   const m2 = new MirrorDrive(src, drive, { prefix: 'node_modules/node-gyp-build' })
-  await Promise.all([m1.done(), m2.done()])
+  const m3 = new MirrorDrive(src, drive, { prefix: 'node_modules/b4a' })
+  await Promise.all([m1.done(), m2.done(), m3.done()])
 
   await drive.put('/index.js', Buffer.from(`
     const sodium = require("sodium-native")
-    const buffer = Buffer.alloc(32)
+    const b4a = require("b4a")
+    const buffer = b4a.alloc(32)
     sodium.randombytes_buf(buffer)
     module.exports = buffer.toString('hex').length
   `))
