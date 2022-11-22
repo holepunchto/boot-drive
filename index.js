@@ -41,7 +41,7 @@ module.exports = class Boot {
       const hasBuilds = dep.module.resolutions.some(r => r.input === 'node-gyp-build')
       if (hasBuilds) {
         try {
-          const entrypath = path.join(dep.module.dirname, 'prebuilds', process.platform + '-' + process.arch, 'node.napi.node')
+          const entrypath = dep.module.dirname + '/prebuilds/' + process.platform + '-' + process.arch + '/node.napi.node'
           const buffer = await this.drive.get(entrypath)
 
           const filename = path.join('prebuilds', dep.module.package?.name + '-' + sha1(buffer) + '.node')
