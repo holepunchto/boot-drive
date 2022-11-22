@@ -6,6 +6,8 @@ const fsp = require('fs/promises')
 const crypto = require('crypto')
 const ScriptLinker = require('script-linker')
 
+const prebuilds = new Map()
+
 module.exports = class Boot {
   constructor (drive, opts = {}) {
     this.drive = drive
@@ -47,6 +49,8 @@ module.exports = class Boot {
           const filename = path.join('prebuilds', name + '-' + sha1(buffer) + '.node')
           await fsp.mkdir(path.dirname(filename), { recursive: true })
           await fsp.writeFile(filename, buffer)
+
+          prebuilds.set(dep.module.dirname, path.resolve(filename))
         } catch (error) {
           console.error(error) // + temp
         }
@@ -91,8 +95,7 @@ module.exports = class Boot {
 }
 
 function customBinding (dirname) {
-  const filename = path.join(process.cwd(), 'prebuilds', process.platform + '-' + process.arch, 'node.napi.node')
-  return require(filename)
+  return require(prebuilds.get(dirname))
 }
 
 function sha1 (data) {
