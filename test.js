@@ -26,6 +26,7 @@ test('entrypoint from package.json', async function (t) {
   await drive.put('/index.js', Buffer.from('module.exports = "hello"'))
 
   const boot = new Boot(drive)
+
   t.alike(await boot.start(), { exports: 'hello' })
 })
 
@@ -35,6 +36,7 @@ test('entrypoint not found', async function (t) {
   await drive.put('/index.js', Buffer.from('module.exports = "hello"'))
 
   const boot = new Boot(drive)
+
   try {
     await boot.start()
     t.fail('should have failed to start')
@@ -60,6 +62,7 @@ test('require file within drive', async function (t) {
   await drive.put('/func.js', Buffer.from('module.exports = () => "hello func"'))
 
   const boot = new Boot(drive)
+
   t.alike(await boot.start('/index.js'), { exports: 'hello func' })
 })
 
@@ -85,6 +88,7 @@ test('require module with prebuilds', async function (t) {
   `))
 
   const boot = new Boot(drive)
+
   t.alike(await boot.start('/index.js'), { exports: 64 })
 })
 
@@ -105,6 +109,7 @@ test('add module', async function (t) {
 
   const boot = new Boot(drive, { modules: ['sodium-native'] })
   boot.modules.add('b4a')
+
   t.alike(await boot.start('/index.js'), { exports: 64 })
 })
 
