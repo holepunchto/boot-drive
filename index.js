@@ -48,7 +48,7 @@ module.exports = class Boot {
     this.prebuilds.set(mod.dirname, path.resolve(filename))
   }
 
-  async ready () {
+  async warmup () {
     if (!this.entrypoint) {
       const pkg = await this.drive.get('/package.json')
       this.entrypoint = JSON.parse(pkg || '{}').main

@@ -11,7 +11,7 @@ npm i boot-drive
 const Boot = require('boot-drive')
 
 const boot = new Boot(drive)
-await boot.ready()
+await boot.warmup()
 
 boot.start()
 ```
@@ -41,7 +41,7 @@ By default it contains all the native modules.
 
 Add more by `boot.modules.add(name)` or using `options` from the constructor.
 
-#### `await boot.ready()`
+#### `await boot.warmup()`
 
 Prepares the drive.
 
