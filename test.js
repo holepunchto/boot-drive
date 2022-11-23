@@ -65,6 +65,25 @@ test('require module with prebuilds', async function (t) {
   t.alike(await boot.start('/index.js'), { exports: 64 })
 })
 
+test('add module', async function (t) {
+  const { drive } = create()
+
+  const sodium = require('sodium-native')
+  sodium.$used = true
+
+  await drive.put('/index.js', Buffer.from(`
+    const sodium = require("sodium-native")
+    const b4a = require("b4a")
+    if (!sodium.$used) throw new Error("sodium-native should have been imported before")
+    const buffer = b4a.allocUnsafe(32)
+    sodium.randombytes_buf(buffer)
+    module.exports = buffer.toString('hex').length
+  `))
+
+  const boot = new Boot(drive, { modules: ['sodium-native', 'b4a'] })
+  t.alike(await boot.start('/index.js'), { exports: 64 })
+})
+
 function create () {
   const store = new Corestore(RAM)
   const drive = new Hyperdrive(store)
