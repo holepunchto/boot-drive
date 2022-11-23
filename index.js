@@ -88,7 +88,7 @@ module.exports = class Boot {
         }
 
         const output = resolve(mod, req)
-        if (output === null) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
+        if (!output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
 
         if (req === 'node-gyp-build') return customBinding.bind(self)
         return run(linker.modules.get(output)).exports
