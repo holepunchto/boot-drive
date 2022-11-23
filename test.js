@@ -86,14 +86,16 @@ test('require file within drive', async function (t) {
 
   await drive.put('/index.js', Buffer.from(`
     const func = require("./func.js")
-    module.exports = func()
+    const net = require("net")
+    const isIP = net.isIP('127.0.0.1')
+    module.exports = func() + ': ' + isIP
   `))
   await drive.put('/func.js', Buffer.from('module.exports = () => "hello func"'))
 
   const boot = new Boot(drive)
   await boot.warmup()
 
-  t.alike(boot.start(), { exports: 'hello func' })
+  t.alike(boot.start(), { exports: 'hello func: 4' })
 })
 
 test('require module with prebuilds', async function (t) {
@@ -169,6 +171,59 @@ test('remote drive', async function (t) {
   await boot.warmup()
 
   t.alike(boot.start(), { exports: 'hello' })
+})
+
+test('stringify', async function (t) {
+  const [drive] = create()
+
+  await drive.put('/index.js', Buffer.from(`
+    const net = require("net")
+    const func = require("./func.js")
+    const isIP = net.isIP('127.0.0.1')
+    module.exports = func() + ': ' + isIP
+  `.trim()))
+  await drive.put('/func.js', Buffer.from('module.exports = () => "hello func"'))
+
+  const boot = new Boot(drive)
+  await boot.warmup()
+
+  const source = boot.stringify()
+  t.alike(eval(source), { exports: 'hello func: 4' })
+})
+
+test('stringify with prebuilds', async function (t) {
+  const [drive] = create()
+
+  const src = new Localdrive(__dirname)
+  const m1 = new MirrorDrive(src, drive, { prefix: 'node_modules/sodium-native' })
+  const m2 = new MirrorDrive(src, drive, { prefix: 'node_modules/node-gyp-build' })
+  const m3 = new MirrorDrive(src, drive, { prefix: 'node_modules/b4a' })
+  await Promise.all([m1.done(), m2.done(), m3.done()])
+
+  const sodium = require('sodium-native')
+  sodium.$used = true
+
+  await drive.put('/index.js', Buffer.from(`
+    const sodium = require("sodium-native")
+    const b4a = require("b4a")
+    if (sodium.$used) throw new Error("sodium-native was already imported before")
+    const buffer = b4a.allocUnsafe(32)
+    sodium.randombytes_buf(buffer)
+    module.exports = buffer.toString('hex').length
+  `))
+
+  const boot = new Boot(drive)
+
+  try {
+    await fsp.rm(boot.prebuildsPath, { recursive: true })
+  } catch {}
+
+  await boot.warmup()
+
+  const source = boot.stringify()
+  t.alike(eval(source), { exports: 64 })
+
+  await fsp.rm(boot.prebuildsPath, { recursive: true })
 })
 
 async function replicate (t, bootstrap, corestore, drive, { server = false, client = false } = {}) {

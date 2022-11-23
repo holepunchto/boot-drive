@@ -67,13 +67,12 @@ module.exports = class Boot {
 
   start () {
     const self = this
-    const cache = {}
     const nodeRequire = require
     const { linker, modules } = this
 
     return run(this.first.module)
 
-    function run (mod) {
+    function run (mod, cache = {}) {
       if (cache[mod.filename]) return cache[mod.filename]
 
       const m = cache[mod.filename] = {
@@ -96,7 +95,83 @@ module.exports = class Boot {
         if (!output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
 
         if (req === 'node-gyp-build') return customBinding.bind(self)
-        return run(linker.modules.get(output)).exports
+        return run(linker.modules.get(output), cache).exports
+      }
+    }
+  }
+
+  _bundleDeps (mod, dependencies = {}) {
+    const dep = dependencies[mod.filename] = {
+      filename: mod.filename,
+      dirname: mod.dirname,
+      tree: {},
+      source: mod.source
+    }
+
+    for (const r of mod.resolutions) {
+      const isModule = this.modules.has(r.input)
+
+      if (isModule || !r.output) {
+        dep.tree[r.input] = { output: r.output, shouldNodeRequire: isModule }
+        continue
+      }
+
+      if (r.input === 'node-gyp-build') {
+        dep.tree[r.input] = { output: this.prebuilds.get(mod.dirname) }
+        continue
+      }
+
+      this._bundleDeps(this.linker.modules.get(r.output), dependencies)
+
+      // const isFile = r.input[0] === '.' || r.input[0] === '/'
+      // dep.tree[r.input] = { output: isFile ? path.resolve(r.input) : r.output }
+      dep.tree[r.input] = { output: r.output }
+    }
+
+    return dependencies
+  }
+
+  stringify () {
+    const { linker, modules } = this
+
+    const dependencies = this._bundleDeps(this.first.module)
+
+    return `
+    const dependencies = ${JSON.stringify(dependencies, null, 2)}
+    const nodeRequire = require
+
+    run(dependencies['${this.first.module.filename}'])
+
+    ${run.toString()}
+    `.trim()
+
+    // on purpose very similar to run() of start() to try re-use it
+    function run (mod, cache = {}) {
+      if (cache[mod.filename]) return cache[mod.filename]
+
+      const m = cache[mod.filename] = {
+        exports: {}
+      }
+
+      require.cache = cache
+
+      const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', mod.source) // eslint-disable-line no-new-func
+      wrap(require, mod.dirname, mod.filename, m, m.exports)
+
+      return m
+
+      function require (req) {
+        const r = mod.tree[req]
+
+        if (r.shouldNodeRequire) {
+          return nodeRequire(r.output)
+        }
+
+        if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
+
+        if (req === 'node-gyp-build') return () => nodeRequire(r.output)
+
+        return run(dependencies[r.output], cache).exports
       }
     }
   }
