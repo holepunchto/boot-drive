@@ -43,6 +43,13 @@ test('entrypoint not found', async function (t) {
   }
 })
 
+test('change prebuilds path', async function (t) {
+  const { drive } = create()
+
+  const boot = new Boot(drive, { prebuildsPath: 'builds' })
+  t.is(boot.prebuildsPath, 'builds')
+})
+
 test('require file within drive', async function (t) {
   const { drive } = create()
 
