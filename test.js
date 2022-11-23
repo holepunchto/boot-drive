@@ -30,6 +30,19 @@ test('entrypoint from package.json', async function (t) {
   t.alike(await boot.start(), { exports: 'hello' })
 })
 
+test('no file', async function (t) {
+  const { drive } = create()
+
+  const boot = new Boot(drive)
+
+  try {
+    await boot.start('/index.js')
+    t.fail('should have failed to start')
+  } catch (error) {
+    t.is(error.message, 'ENOENT: /index.js')
+  }
+})
+
 test('entrypoint not found', async function (t) {
   const { drive } = create()
 
