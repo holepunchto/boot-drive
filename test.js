@@ -7,6 +7,7 @@ const Corestore = require('corestore')
 const Hyperdrive = require('hyperdrive')
 const Localdrive = require('localdrive')
 const MirrorDrive = require('mirror-drive')
+const fsp = require('fs/promises')
 
 test('basic', async function (t) {
   const { drive } = create()
@@ -102,7 +103,13 @@ test('require module with prebuilds', async function (t) {
 
   const boot = new Boot(drive)
 
+  try {
+    await fsp.rm(boot.prebuildsPath, { recursive: true })
+  } catch {}
+
   t.alike(await boot.start('/index.js'), { exports: 64 })
+
+  await fsp.rm(boot.prebuildsPath, { recursive: true })
 })
 
 test('add module', async function (t) {
