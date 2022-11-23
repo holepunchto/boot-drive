@@ -27,6 +27,20 @@ test('entrypoint from package.json', async function (t) {
   t.alike(await boot.start(), { exports: 'hello' })
 })
 
+test('entrypoint not found', async function (t) {
+  const { drive } = create()
+
+  await drive.put('/index.js', Buffer.from('module.exports = "hello"'))
+
+  const boot = new Boot(drive)
+  try {
+    await boot.start()
+    t.fail('should have failed to start')
+  } catch (error) {
+    t.is(error.message, 'No entrypoint')
+  }
+})
+
 test('require file within drive', async function (t) {
   const { drive } = create()
 
