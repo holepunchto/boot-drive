@@ -14,6 +14,8 @@ test('basic', async function (t) {
   await drive.put('/index.js', Buffer.from('module.exports = "hello"'))
 
   const boot = new Boot(drive)
+  t.is(boot.prebuildsPath, 'prebuilds')
+
   t.alike(await boot.start('/index.js'), { exports: 'hello' })
 })
 
