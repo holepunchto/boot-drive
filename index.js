@@ -132,8 +132,6 @@ module.exports = class Boot {
   }
 
   stringify () {
-    const { linker, modules } = this
-
     const dependencies = this._bundleDeps(this.first.module)
 
     return `
@@ -166,12 +164,12 @@ module.exports = class Boot {
         const r = mod.tree[req]
 
         if (r.shouldNodeRequire) {
-          return nodeRequire(r.output)
+          return nodeRequire(r.output) // eslint-disable-line no-undef
         }
 
         if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
 
-        if (req === 'node-gyp-build') return () => nodeRequire(r.output)
+        if (req === 'node-gyp-build') return () => nodeRequire(r.output) // eslint-disable-line no-undef
 
         return run(dependencies[r.output], cache).exports
       }

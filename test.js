@@ -188,7 +188,7 @@ test('stringify', async function (t) {
   await boot.warmup()
 
   const source = boot.stringify()
-  t.alike(eval(source), { exports: 'hello func: 4' })
+  t.alike(eval(source), { exports: 'hello func: 4' }) // eslint-disable-line no-eval
 })
 
 test('stringify with prebuilds', async function (t) {
@@ -221,7 +221,7 @@ test('stringify with prebuilds', async function (t) {
   await boot.warmup()
 
   const source = boot.stringify()
-  t.alike(eval(source), { exports: 64 })
+  t.alike(eval(source), { exports: 64 }) // eslint-disable-line no-eval
 
   await fsp.rm(boot.prebuildsPath, { recursive: true })
 })
