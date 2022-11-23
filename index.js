@@ -137,6 +137,8 @@ module.exports = class Boot {
     const dependencies = this._bundleDeps(this.first.module)
 
     return `
+    'use strict'
+
     const dependencies = ${JSON.stringify(dependencies, null, 2)}
     const nodeRequire = require
 
