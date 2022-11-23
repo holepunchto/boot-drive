@@ -19,7 +19,7 @@ module.exports = class Boot {
       cacheSize: Infinity,
       readFile: async (name) => {
         const buffer = await this.drive.get(name)
-        if (!buffer) throw new Error('No entry: ' + name)
+        if (!buffer) throw new Error('ENOENT: ' + name)
         return buffer
       }
     })

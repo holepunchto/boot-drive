@@ -28,7 +28,7 @@ Available `options`:
 }
 ```
 
-`modules` is used to add more native modules.
+`modules` is used to add more native modules.\
 `prebuildsPath` is where binding prebuilds are stored (default: `./prebuilds`).
 
 #### `drive.modules`
