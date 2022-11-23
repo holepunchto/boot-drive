@@ -28,7 +28,7 @@ module.exports = class Boot {
   }
 
   async _savePrebuildToDisk (mod) {
-    const hasBuilds = mod.resolutions.some(r => r.input === 'node-gyp-build')
+    const hasBuilds = resolve(mod, 'node-gyp-build')
     if (!hasBuilds) return
 
     const entrypath = mod.dirname + '/prebuilds/' + process.platform + '-' + process.arch + '/node.napi.node'
@@ -88,6 +88,8 @@ module.exports = class Boot {
         }
 
         const output = resolve(mod, req)
+        if (output === null) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
+
         if (req === 'node-gyp-build') return customBinding.bind(self)
         return run(linker.modules.get(output)).exports
       }
@@ -102,7 +104,7 @@ function resolve (mod, input) {
       return r.output
     }
   }
-  throw new Error('Could not resolve ' + input + ' from ' + mod.dirname)
+  return null
 }
 
 function customBinding (dirname) {
