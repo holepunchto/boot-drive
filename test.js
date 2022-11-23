@@ -19,18 +19,31 @@ test('basic', async function (t) {
   const boot = new Boot(drive)
   t.is(boot.prebuildsPath, 'prebuilds')
 
-  t.alike(await boot.start('/index.js'), { exports: 'hello' })
+  await boot.ready()
+
+  t.alike(boot.start(), { exports: 'hello' })
+})
+
+test('entrypoint', async function (t) {
+  const [drive] = create()
+  await drive.put('/random-file.js', Buffer.from('module.exports = "hello"'))
+
+  const boot = new Boot(drive, { entrypoint: 'random-file.js' })
+  await boot.ready()
+
+  t.alike(boot.start(), { exports: 'hello' })
 })
 
 test('entrypoint from package.json', async function (t) {
   const [drive] = create()
 
-  await drive.put('/package.json', Buffer.from(JSON.stringify({ main: 'index.js' })))
-  await drive.put('/index.js', Buffer.from('module.exports = "hello"'))
+  await drive.put('/package.json', Buffer.from(JSON.stringify({ main: 'random-file.js' })))
+  await drive.put('/random-file.js', Buffer.from('module.exports = "hello"'))
 
   const boot = new Boot(drive)
+  await boot.ready()
 
-  t.alike(await boot.start(), { exports: 'hello' })
+  t.alike(boot.start(), { exports: 'hello' })
 })
 
 test('no file', async function (t) {
@@ -39,7 +52,7 @@ test('no file', async function (t) {
   const boot = new Boot(drive)
 
   try {
-    await boot.start('/index.js')
+    await boot.ready()
     t.fail('should have failed to start')
   } catch (error) {
     t.is(error.message, 'ENOENT: /index.js')
@@ -49,15 +62,15 @@ test('no file', async function (t) {
 test('entrypoint not found', async function (t) {
   const [drive] = create()
 
-  await drive.put('/index.js', Buffer.from('module.exports = "hello"'))
+  await drive.put('/random-file.js', Buffer.from('module.exports = "hello"'))
 
   const boot = new Boot(drive)
 
   try {
-    await boot.start()
+    await boot.ready()
     t.fail('should have failed to start')
   } catch (error) {
-    t.is(error.message, 'No entrypoint')
+    t.is(error.message, 'ENOENT: /index.js')
   }
 })
 
@@ -78,8 +91,9 @@ test('require file within drive', async function (t) {
   await drive.put('/func.js', Buffer.from('module.exports = () => "hello func"'))
 
   const boot = new Boot(drive)
+  await boot.ready()
 
-  t.alike(await boot.start('/index.js'), { exports: 'hello func' })
+  t.alike(boot.start(), { exports: 'hello func' })
 })
 
 test('require module with prebuilds', async function (t) {
@@ -109,7 +123,9 @@ test('require module with prebuilds', async function (t) {
     await fsp.rm(boot.prebuildsPath, { recursive: true })
   } catch {}
 
-  t.alike(await boot.start('/index.js'), { exports: 64 })
+  await boot.ready()
+
+  t.alike(boot.start(), { exports: 64 })
 
   await fsp.rm(boot.prebuildsPath, { recursive: true })
 })
@@ -131,8 +147,9 @@ test('add module', async function (t) {
 
   const boot = new Boot(drive, { modules: ['sodium-native'] })
   boot.modules.add('b4a')
+  await boot.ready()
 
-  t.alike(await boot.start('/index.js'), { exports: 64 })
+  t.alike(boot.start(), { exports: 64 })
 })
 
 test('remote drive', async function (t) {
@@ -149,7 +166,9 @@ test('remote drive', async function (t) {
   replicate(t, bootstrap, corestore2, drive2, { client: true }).then(done)
 
   const boot = new Boot(drive2)
-  t.alike(await boot.start('/index.js'), { exports: 'hello' })
+  await boot.ready()
+
+  t.alike(boot.start(), { exports: 'hello' })
 })
 
 async function replicate (t, bootstrap, corestore, drive, { server = false, client = false } = {}) {

@@ -12,6 +12,7 @@ module.exports = class Boot {
     this.drive = drive
     this.modules = new Set(builtinModules)
 
+    this.entrypoint = opts.entrypoint || null
     this.prebuildsPath = opts.prebuildsPath || 'prebuilds'
     this.prebuilds = new Map()
 
@@ -25,6 +26,8 @@ module.exports = class Boot {
     })
 
     if (opts.modules) for (const name of opts.modules) this.modules.add(name)
+
+    this.first = null
   }
 
   async _savePrebuildToDisk (mod) {
@@ -45,28 +48,30 @@ module.exports = class Boot {
     this.prebuilds.set(mod.dirname, path.resolve(filename))
   }
 
-  async start (entrypoint) {
-    if (!entrypoint) {
+  async ready () {
+    if (!this.entrypoint) {
       const pkg = await this.drive.get('/package.json')
-      entrypoint = JSON.parse(pkg || '{}').main
-      if (!entrypoint) throw new Error('No entrypoint')
-      entrypoint = path.resolve('/', entrypoint)
+      this.entrypoint = JSON.parse(pkg || '{}').main
+      if (!this.entrypoint) this.entrypoint = 'index.js'
     }
+    this.entrypoint = path.resolve('/', this.entrypoint)
 
-    let first = null
+    this.first = null
 
-    for await (const dep of this.linker.dependencies(entrypoint)) {
-      if (!first) first = dep
+    for await (const dep of this.linker.dependencies(this.entrypoint)) {
+      if (!this.first) this.first = dep
 
       await this._savePrebuildToDisk(dep.module)
     }
+  }
 
+  start () {
     const self = this
     const cache = {}
     const nodeRequire = require
     const { linker, modules } = this
 
-    return run(first.module)
+    return run(this.first.module)
 
     function run (mod) {
       if (cache[mod.filename]) return cache[mod.filename]
