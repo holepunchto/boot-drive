@@ -80,7 +80,8 @@ test('add module', async function (t) {
     module.exports = buffer.toString('hex').length
   `))
 
-  const boot = new Boot(drive, { modules: ['sodium-native', 'b4a'] })
+  const boot = new Boot(drive, { modules: ['sodium-native'] })
+  boot.modules.add('b4a')
   t.alike(await boot.start('/index.js'), { exports: 64 })
 })
 
