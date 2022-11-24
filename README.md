@@ -15,13 +15,13 @@ const boot = new Boot(drive)
 await boot.warmup()
 ```
 
-Then you can start it:
+Then you can start it
 ```js
 const exported = boot.start()
 console.log(exported)
 ```
 
-Or you could just bundle it:
+Or you could just bundle it
 ```js
 const source = boot.stringify()
 console.log(source) // eval(source) or save it into a file
