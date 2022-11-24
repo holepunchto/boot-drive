@@ -100,32 +100,36 @@ module.exports = class Boot {
     }
   }
 
-  _bundleDeps (mod, dependencies = {}) {
-    const dep = dependencies[mod.filename] = {
-      filename: mod.filename,
-      dirname: mod.dirname,
-      tree: {},
-      source: mod.source
-    }
+  _bundleDeps (firstModule) {
+    const dependencies = {}
+    const stack = [firstModule]
 
-    for (const r of mod.resolutions) {
-      const isModule = this.modules.has(r.input)
-
-      if (isModule || !r.output) {
-        dep.tree[r.input] = { output: r.output, shouldNodeRequire: isModule }
-        continue
+    while (stack.length) {
+      const mod = stack.pop()
+      const dep = dependencies[mod.filename] = {
+        filename: mod.filename,
+        dirname: mod.dirname,
+        requires: {},
+        source: mod.source
       }
 
-      if (r.input === 'node-gyp-build') {
-        dep.tree[r.input] = { output: this.prebuilds.get(mod.dirname) }
-        continue
+      for (const r of mod.resolutions) {
+        const isModule = this.modules.has(r.input)
+
+        if (isModule || !r.output) {
+          dep.requires[r.input] = { output: r.output, shouldNodeRequire: isModule }
+          continue
+        }
+
+        if (r.input === 'node-gyp-build') {
+          dep.requires[r.input] = { output: this.prebuilds.get(mod.dirname) }
+          continue
+        }
+
+        dep.requires[r.input] = { output: r.output }
+
+        stack.push(this.linker.modules.get(r.output))
       }
-
-      this._bundleDeps(this.linker.modules.get(r.output), dependencies)
-
-      // const isFile = r.input[0] === '.' || r.input[0] === '/'
-      // dep.tree[r.input] = { output: isFile ? path.resolve(r.input) : r.output }
-      dep.tree[r.input] = { output: r.output }
     }
 
     return dependencies
@@ -161,7 +165,7 @@ module.exports = class Boot {
       return m
 
       function require (req) {
-        const r = mod.tree[req]
+        const r = mod.requires[req]
 
         if (r.shouldNodeRequire) {
           return nodeRequire(r.output) // eslint-disable-line no-undef
