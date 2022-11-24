@@ -15,7 +15,10 @@ await boot.warmup()
 
 const exported = boot.start()
 console.log(exported)
+```
 
+Instead of `start()`, you could just bundle it:
+```js
 const source = boot.stringify()
 console.log(source) // eval(source) or save it into a file
 ```
