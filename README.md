@@ -7,17 +7,21 @@ npm i boot-drive
 ```
 
 ## Usage
+First prepare the drive
 ```js
 const Boot = require('boot-drive')
 
 const boot = new Boot(drive)
 await boot.warmup()
+```
 
+Then you can start it:
+```js
 const exported = boot.start()
 console.log(exported)
 ```
 
-Instead of `start()`, you could just bundle it:
+Or you could just bundle it:
 ```js
 const source = boot.stringify()
 console.log(source) // eval(source) or save it into a file
