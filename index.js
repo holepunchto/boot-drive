@@ -100,9 +100,9 @@ module.exports = class Boot {
     }
   }
 
-  _bundleDeps (firstModule) {
+  _bundleDeps (mod) {
     const dependencies = {}
-    const stack = [firstModule]
+    const stack = [mod]
 
     while (stack.length) {
       const mod = stack.pop()
