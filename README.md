@@ -11,7 +11,9 @@ npm i boot-drive
 const Boot = require('boot-drive')
 
 const boot = new Boot(drive)
-await boot.start()
+await boot.warmup()
+
+boot.start()
 ```
 
 ## API
@@ -23,6 +25,7 @@ Creates a bootloader to run the drive.
 Available `options`:
 ```js
 {
+  entrypoint: null,
   modules: [],
   prebuildsPath: 'prebuilds'
 }
@@ -31,20 +34,24 @@ Available `options`:
 `modules` is used to add more native modules.\
 `prebuildsPath` is where binding prebuilds are stored (default: `./prebuilds`).
 
-#### `drive.modules`
+#### `boot.modules`
 
 List of modules that are included in the boot process.\
 By default it contains all the native modules.
 
-Add more by `drive.modules.add(name)` or using `options` from the constructor.
+Add more by `boot.modules.add(name)` or using `options` from the constructor.
 
-#### `await drive.start([entrypoint])`
+#### `await boot.warmup()`
 
-Runs the drive.
+Prepares the drive.
 
 If `entrypoint` is not set, then it will try `/package.json` `main` property.
 
-If it fails to find an `entrypoint` then the boot process will fail.
+If it fails to find an `entrypoint` then it will use `index.js` by default.
+
+#### `const exports = boot.start()`
+
+Runs the drive.
 
 ## License
 MIT
