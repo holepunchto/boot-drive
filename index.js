@@ -45,7 +45,7 @@ module.exports = class Boot {
       await atomicWriteFile(filename, buffer)
     }
 
-    this.prebuilds.set(mod.dirname, path.resolve(filename))
+    this.prebuilds.set(mod.dirname, './' + filename)
   }
 
   async warmup () {
