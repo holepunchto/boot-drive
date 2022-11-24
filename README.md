@@ -13,7 +13,11 @@ const Boot = require('boot-drive')
 const boot = new Boot(drive)
 await boot.warmup()
 
-boot.start()
+const exported = boot.start()
+console.log(exported)
+
+const source = boot.stringify()
+console.log(source) // eval(source) or save it into a file
 ```
 
 ## API
