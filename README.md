@@ -54,5 +54,9 @@ If it fails to find an `entrypoint` then it will use `index.js` by default.
 
 Runs the drive.
 
+#### `const source = boot.stringify()`
+
+Bundles and stringifies the dependencies and source code of the drive.
+
 ## License
 MIT
