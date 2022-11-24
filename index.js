@@ -15,6 +15,7 @@ module.exports = class Boot {
     this.entrypoint = opts.entrypoint || null
     this.prebuildsPath = opts.prebuildsPath || 'prebuilds'
     this.prebuilds = new Map()
+    this.cache = opts.cache || {}
 
     this.linker = new ScriptLinker({
       cacheSize: Infinity,
@@ -68,11 +69,11 @@ module.exports = class Boot {
   start () {
     const self = this
     const nodeRequire = require
-    const { linker, modules } = this
+    const { linker, modules, cache } = this
 
     return run(this.first.module)
 
-    function run (mod, cache = {}) {
+    function run (mod) {
       if (cache[mod.filename]) return cache[mod.filename]
 
       const m = cache[mod.filename] = {
@@ -95,7 +96,7 @@ module.exports = class Boot {
         if (!output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
 
         if (req === 'node-gyp-build') return customBinding.bind(self)
-        return run(linker.modules.get(output), cache).exports
+        return run(linker.modules.get(output)).exports
       }
     }
   }

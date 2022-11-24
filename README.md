@@ -27,7 +27,8 @@ Available `options`:
 {
   entrypoint: null,
   modules: [],
-  prebuildsPath: 'prebuilds'
+  prebuildsPath: 'prebuilds',
+  cache: {}
 }
 ```
 
