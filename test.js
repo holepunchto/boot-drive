@@ -22,7 +22,7 @@ test('basic', async function (t) {
 
   await boot.warmup()
 
-  t.alike(boot.start(), { exports: 'hello' })
+  t.is(boot.start(), 'hello')
 })
 
 test('entrypoint', async function (t) {
@@ -32,7 +32,7 @@ test('entrypoint', async function (t) {
   const boot = new Boot(drive, { entrypoint: 'random-file.js' })
   await boot.warmup()
 
-  t.alike(boot.start(), { exports: 'hello' })
+  t.is(boot.start(), 'hello')
 })
 
 test('entrypoint from package.json', async function (t) {
@@ -44,7 +44,7 @@ test('entrypoint from package.json', async function (t) {
   const boot = new Boot(drive)
   await boot.warmup()
 
-  t.alike(boot.start(), { exports: 'hello' })
+  t.is(boot.start(), 'hello')
 })
 
 test('no file', async function (t) {
@@ -96,7 +96,7 @@ test('require file within drive', async function (t) {
   const boot = new Boot(drive)
   await boot.warmup()
 
-  t.alike(boot.start(), { exports: 'hello func: 4' })
+  t.is(boot.start(), 'hello func: 4')
 })
 
 test('require module with prebuilds', async function (t) {
@@ -128,7 +128,7 @@ test('require module with prebuilds', async function (t) {
 
   await boot.warmup()
 
-  t.alike(boot.start(), { exports: 64 })
+  t.is(boot.start(), 64)
 
   await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
 })
@@ -152,7 +152,7 @@ test('add module', async function (t) {
   boot.modules.add('b4a')
   await boot.warmup()
 
-  t.alike(boot.start(), { exports: 64 })
+  t.is(boot.start(), 64)
 })
 
 test('remote drive', async function (t) {
@@ -171,7 +171,7 @@ test('remote drive', async function (t) {
   const boot = new Boot(drive2)
   await boot.warmup()
 
-  t.alike(boot.start(), { exports: 'hello' })
+  t.is(boot.start(), 'hello')
 })
 
 test('stringify', async function (t) {
@@ -189,7 +189,7 @@ test('stringify', async function (t) {
   await boot.warmup()
 
   const source = boot.stringify()
-  t.alike(eval(source), { exports: 'hello func: 4' }) // eslint-disable-line no-eval
+  t.is(eval(source), 'hello func: 4') // eslint-disable-line no-eval
 })
 
 test('stringify with prebuilds', async function (t) {
@@ -222,7 +222,7 @@ test('stringify with prebuilds', async function (t) {
   await boot.warmup()
 
   const source = boot.stringify()
-  t.alike(eval(source), { exports: 64 }) // eslint-disable-line no-eval
+  t.is(eval(source), 64) // eslint-disable-line no-eval
 
   await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
 })
@@ -239,10 +239,10 @@ test('require json file', async function (t) {
   const boot = new Boot(drive)
   await boot.warmup()
 
-  t.alike(boot.start(), { exports: { assert: true } })
+  t.alike(boot.start(), { assert: true })
 
   const source = boot.stringify()
-  t.alike(eval(source), { exports: { assert: true } }) // eslint-disable-line no-eval
+  t.alike(eval(source), { assert: true }) // eslint-disable-line no-eval
 })
 
 test('cache (shallow)', async function (t) {
@@ -258,10 +258,10 @@ test('cache (shallow)', async function (t) {
   const boot = new Boot(drive)
   await boot.warmup()
 
-  t.alike(boot.start(), { exports: true })
+  t.is(boot.start(), true)
 
   const source = boot.stringify()
-  t.alike(eval(source), { exports: true }) // eslint-disable-line no-eval
+  t.is(eval(source), true) // eslint-disable-line no-eval
 })
 
 test('cache (internal)', async function (t) {
@@ -279,12 +279,12 @@ test('cache (internal)', async function (t) {
   await boot.warmup()
 
   t.alike(cache, {})
-  t.alike(boot.start(), { exports: true })
+  t.is(boot.start(), true)
   t.alike(cache, { '/index.js': { exports: true }, '/data.json': { exports: { leet: 1337 } } })
 
   // + cache alike
   const source = boot.stringify()
-  t.alike(eval(source), { exports: true }) // eslint-disable-line no-eval
+  t.is(eval(source), true) // eslint-disable-line no-eval
 })
 
 async function replicate (t, bootstrap, corestore, drive, { server = false, client = false } = {}) {

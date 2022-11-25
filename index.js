@@ -76,7 +76,7 @@ module.exports = class Boot {
 
     function run (mod) {
       if (cache[mod.filename]) {
-        return mod.type === 'json' ? cache[mod.filename].exports : cache[mod.filename]
+        return cache[mod.filename].exports
       }
 
       const m = cache[mod.filename] = {
@@ -93,7 +93,7 @@ module.exports = class Boot {
       const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', mod.source) // eslint-disable-line no-new-func
       wrap(require, mod.dirname, mod.filename, m, m.exports)
 
-      return m
+      return m.exports
 
       function require (req) {
         if (modules.has(req)) {
@@ -106,7 +106,7 @@ module.exports = class Boot {
         if (req === 'node-gyp-build') return (dirname) => nodeRequire(path.resolve(self.cwd, self.prebuilds.get(dirname)))
 
         const dep = linker.modules.get(output)
-        return dep.type === 'json' ? run(dep) : run(dep).exports
+        return run(dep)
       }
     }
   }
@@ -164,7 +164,7 @@ module.exports = class Boot {
     // on purpose very similar to run() of start() to try re-use it
     function run (mod, cache = {}) {
       if (cache[mod.filename]) {
-        return mod.type === 'json' ? cache[mod.filename].exports : cache[mod.filename]
+        return cache[mod.filename].exports
       }
 
       const m = cache[mod.filename] = {
@@ -181,7 +181,7 @@ module.exports = class Boot {
       const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', mod.source) // eslint-disable-line no-new-func
       wrap(require, mod.dirname, mod.filename, m, m.exports)
 
-      return m
+      return m.exports
 
       function require (req) {
         const r = mod.requires[req]
@@ -195,7 +195,7 @@ module.exports = class Boot {
         if (req === 'node-gyp-build') return () => nodeRequire(r.output) // eslint-disable-line no-undef
 
         const dep = dependencies[r.output]
-        return dep.type === 'json' ? run(dep, cache) : run(dep, cache).exports
+        return run(dep, cache)
       }
     }
   }
