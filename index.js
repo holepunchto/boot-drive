@@ -13,7 +13,7 @@ module.exports = class Boot {
     this.modules = new Set(builtinModules)
 
     this.entrypoint = opts.entrypoint || null
-    this.prebuildsPath = opts.prebuildsPath || 'prebuilds'
+    this.cwd = opts.cwd || '.'
     this.prebuilds = new Map()
     this.cache = opts.cache || {}
 
@@ -39,14 +39,15 @@ module.exports = class Boot {
     const buffer = await this.drive.get(entrypath)
     if (!buffer) return
 
-    const filename = path.join(this.prebuildsPath, mod.package?.name + '-' + generichash(buffer) + '.node')
+    const basename = mod.package?.name + '-' + generichash(buffer) + '.node'
+    const filename = path.resolve(this.cwd, 'prebuilds', basename)
     const exists = await fileExists(filename)
     if (!exists) {
-      await fsp.mkdir(this.prebuildsPath, { recursive: true })
+      await fsp.mkdir(path.dirname(filename), { recursive: true })
       await atomicWriteFile(filename, buffer)
     }
 
-    this.prebuilds.set(mod.dirname, './' + filename)
+    this.prebuilds.set(mod.dirname, './prebuilds/' + basename)
   }
 
   async warmup () {
@@ -193,7 +194,7 @@ function resolve (mod, input) {
 }
 
 function customBinding (dirname) {
-  return require(this.prebuilds.get(dirname))
+  return require(path.resolve(this.cwd, this.prebuilds.get(dirname)))
 }
 
 async function atomicWriteFile (filename, buffer) {

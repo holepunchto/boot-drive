@@ -10,6 +10,7 @@ const MirrorDrive = require('mirror-drive')
 const Hyperswarm = require('hyperswarm')
 const createTestnet = require('@hyperswarm/testnet')
 const fsp = require('fs/promises')
+const path = require('path')
 
 test('basic', async function (t) {
   const [drive] = create()
@@ -17,7 +18,7 @@ test('basic', async function (t) {
   await drive.put('/index.js', Buffer.from('module.exports = "hello"'))
 
   const boot = new Boot(drive)
-  t.is(boot.prebuildsPath, 'prebuilds')
+  t.is(boot.cwd, '.')
 
   await boot.warmup()
 
@@ -77,8 +78,8 @@ test('entrypoint not found', async function (t) {
 test('change prebuilds path', async function (t) {
   const [drive] = create()
 
-  const boot = new Boot(drive, { prebuildsPath: 'builds' })
-  t.is(boot.prebuildsPath, 'builds')
+  const boot = new Boot(drive, { cwd: './working-dir' })
+  t.is(boot.cwd, './working-dir')
 })
 
 test('require file within drive', async function (t) {
@@ -122,14 +123,14 @@ test('require module with prebuilds', async function (t) {
   const boot = new Boot(drive)
 
   try {
-    await fsp.rm(boot.prebuildsPath, { recursive: true })
+    await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
   } catch {}
 
   await boot.warmup()
 
   t.alike(boot.start(), { exports: 64 })
 
-  await fsp.rm(boot.prebuildsPath, { recursive: true })
+  await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
 })
 
 test('add module', async function (t) {
@@ -215,7 +216,7 @@ test('stringify with prebuilds', async function (t) {
   const boot = new Boot(drive)
 
   try {
-    await fsp.rm(boot.prebuildsPath, { recursive: true })
+    await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
   } catch {}
 
   await boot.warmup()
@@ -223,7 +224,7 @@ test('stringify with prebuilds', async function (t) {
   const source = boot.stringify()
   t.alike(eval(source), { exports: 64 }) // eslint-disable-line no-eval
 
-  await fsp.rm(boot.prebuildsPath, { recursive: true })
+  await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
 })
 
 async function replicate (t, bootstrap, corestore, drive, { server = false, client = false } = {}) {

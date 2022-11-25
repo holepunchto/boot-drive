@@ -38,13 +38,13 @@ Available `options`:
 {
   entrypoint: null,
   modules: [],
-  prebuildsPath: 'prebuilds',
+  cwd: '.',
   cache: {}
 }
 ```
 
 `modules` is used to add more native modules.\
-`prebuildsPath` is where binding prebuilds are stored (default: `./prebuilds`).
+`cwd` is the working directory for `prebuilds/` (default: `.`).
 
 #### `boot.modules`
 
@@ -68,6 +68,9 @@ Runs the drive.
 #### `const source = boot.stringify()`
 
 Bundles and stringifies the dependencies and source code of the drive.
+
+`opts.cwd` doesn't apply for `stringify()`:\
+Native modules has to always be in `./prebuilds/` related to the source file.
 
 ## License
 MIT
