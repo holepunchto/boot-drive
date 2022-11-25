@@ -96,7 +96,7 @@ module.exports = class Boot {
         const output = resolve(mod, req)
         if (!output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
 
-        if (req === 'node-gyp-build') return customBinding.bind(self)
+        if (req === 'node-gyp-build') return (dirname) => nodeRequire(path.resolve(self.cwd, self.prebuilds.get(dirname)))
 
         const dep = linker.modules.get(output)
 
@@ -201,10 +201,6 @@ function resolve (mod, input) {
     }
   }
   return null
-}
-
-function customBinding (dirname) {
-  return require(path.resolve(this.cwd, this.prebuilds.get(dirname)))
 }
 
 async function atomicWriteFile (filename, buffer) {
