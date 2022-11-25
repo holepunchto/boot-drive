@@ -97,7 +97,12 @@ module.exports = class Boot {
         if (!output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
 
         if (req === 'node-gyp-build') return customBinding.bind(self)
-        return run(linker.modules.get(output)).exports
+
+        const dep = linker.modules.get(output)
+
+        if (dep.type === 'json') return JSON.parse(dep.source)
+
+        return run(dep).exports
       }
     }
   }
@@ -111,6 +116,7 @@ module.exports = class Boot {
       const dep = dependencies[mod.filename] = {
         filename: mod.filename,
         dirname: mod.dirname,
+        type: mod.type,
         requires: {},
         source: mod.source
       }
@@ -177,7 +183,11 @@ module.exports = class Boot {
 
         if (req === 'node-gyp-build') return () => nodeRequire(r.output) // eslint-disable-line no-undef
 
-        return run(dependencies[r.output], cache).exports
+        const dep = dependencies[r.output]
+
+        if (dep.type === 'json') return JSON.parse(dep.source)
+
+        return run(dep, cache).exports
       }
     }
   }

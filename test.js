@@ -227,6 +227,24 @@ test('stringify with prebuilds', async function (t) {
   await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
 })
 
+test('require json file', async function (t) {
+  const [drive] = create()
+
+  await drive.put('/index.js', Buffer.from(`
+    const data = require("./data.json")
+    module.exports = data
+  `))
+  await drive.put('/data.json', Buffer.from('{ "assert": true }'))
+
+  const boot = new Boot(drive)
+  await boot.warmup()
+
+  t.alike(boot.start(), { exports: { assert: true } })
+
+  const source = boot.stringify()
+  t.alike(eval(source), { exports: { assert: true } }) // eslint-disable-line no-eval
+})
+
 async function replicate (t, bootstrap, corestore, drive, { server = false, client = false } = {}) {
   await drive.ready()
 
