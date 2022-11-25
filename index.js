@@ -75,10 +75,15 @@ module.exports = class Boot {
     return run(this.first.module)
 
     function run (mod) {
-      if (cache[mod.filename]) return cache[mod.filename]
+      if (cache[mod.filename]) return cache[mod.filename].exports
 
       const m = cache[mod.filename] = {
         exports: {}
+      }
+
+      if (mod.type === 'json') {
+        m.exports = JSON.parse(mod.source)
+        return m.exports
       }
 
       require.cache = cache
@@ -86,7 +91,7 @@ module.exports = class Boot {
       const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', mod.source) // eslint-disable-line no-new-func
       wrap(require, mod.dirname, mod.filename, m, m.exports)
 
-      return m
+      return m.exports
 
       function require (req) {
         if (modules.has(req)) {
@@ -96,8 +101,10 @@ module.exports = class Boot {
         const output = resolve(mod, req)
         if (!output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
 
-        if (req === 'node-gyp-build') return customBinding.bind(self)
-        return run(linker.modules.get(output)).exports
+        if (req === 'node-gyp-build') return (dirname) => nodeRequire(path.resolve(self.cwd, self.prebuilds.get(dirname)))
+
+        const dep = linker.modules.get(output)
+        return run(dep)
       }
     }
   }
@@ -111,6 +118,7 @@ module.exports = class Boot {
       const dep = dependencies[mod.filename] = {
         filename: mod.filename,
         dirname: mod.dirname,
+        type: mod.type,
         requires: {},
         source: mod.source
       }
@@ -153,10 +161,15 @@ module.exports = class Boot {
 
     // on purpose very similar to run() of start() to try re-use it
     function run (mod, cache = {}) {
-      if (cache[mod.filename]) return cache[mod.filename]
+      if (cache[mod.filename]) return cache[mod.filename].exports
 
       const m = cache[mod.filename] = {
         exports: {}
+      }
+
+      if (mod.type === 'json') {
+        m.exports = JSON.parse(mod.source)
+        return m.exports
       }
 
       require.cache = cache
@@ -164,7 +177,7 @@ module.exports = class Boot {
       const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', mod.source) // eslint-disable-line no-new-func
       wrap(require, mod.dirname, mod.filename, m, m.exports)
 
-      return m
+      return m.exports
 
       function require (req) {
         const r = mod.requires[req]
@@ -177,7 +190,8 @@ module.exports = class Boot {
 
         if (req === 'node-gyp-build') return () => nodeRequire(r.output) // eslint-disable-line no-undef
 
-        return run(dependencies[r.output], cache).exports
+        const dep = dependencies[r.output]
+        return run(dep, cache)
       }
     }
   }
@@ -191,10 +205,6 @@ function resolve (mod, input) {
     }
   }
   return null
-}
-
-function customBinding (dirname) {
-  return require(path.resolve(this.cwd, this.prebuilds.get(dirname)))
 }
 
 async function atomicWriteFile (filename, buffer) {
