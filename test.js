@@ -245,6 +245,48 @@ test('require json file', async function (t) {
   t.alike(eval(source), { exports: { assert: true } }) // eslint-disable-line no-eval
 })
 
+test('cache (shallow)', async function (t) {
+  const [drive] = create()
+
+  await drive.put('/index.js', Buffer.from(`
+    const rand1 = require("./rand.js")
+    const rand2 = require("./rand.js")
+    module.exports = rand1 === rand2
+  `))
+  await drive.put('/rand.js', Buffer.from('module.exports = Math.random()'))
+
+  const boot = new Boot(drive)
+  await boot.warmup()
+
+  t.alike(boot.start(), { exports: true })
+
+  const source = boot.stringify()
+  t.alike(eval(source), { exports: true }) // eslint-disable-line no-eval
+})
+
+test('cache (internal)', async function (t) {
+  const [drive] = create()
+
+  await drive.put('/index.js', Buffer.from(`
+    const data1 = require("./data.json")
+    const data2 = require("./data.json")
+    module.exports = data1 === data2
+  `))
+  await drive.put('/data.json', Buffer.from('{ "leet": 1337 }'))
+
+  const cache = {}
+  const boot = new Boot(drive, { cache })
+  await boot.warmup()
+
+  t.alike(cache, {})
+  t.alike(boot.start(), { exports: true })
+  t.alike(cache, { '/index.js': { exports: true }, '/data.json': { exports: { leet: 1337 } } })
+
+  // + cache alike
+  const source = boot.stringify()
+  t.alike(eval(source), { exports: true }) // eslint-disable-line no-eval
+})
+
 async function replicate (t, bootstrap, corestore, drive, { server = false, client = false } = {}) {
   await drive.ready()
 
