@@ -75,9 +75,7 @@ module.exports = class Boot {
     return run(this.first.module)
 
     function run (mod) {
-      if (cache[mod.filename]) {
-        return cache[mod.filename].exports
-      }
+      if (cache[mod.filename]) return cache[mod.filename].exports
 
       const m = cache[mod.filename] = {
         exports: {}
@@ -163,9 +161,7 @@ module.exports = class Boot {
 
     // on purpose very similar to run() of start() to try re-use it
     function run (mod, cache = {}) {
-      if (cache[mod.filename]) {
-        return cache[mod.filename].exports
-      }
+      if (cache[mod.filename]) return cache[mod.filename].exports
 
       const m = cache[mod.filename] = {
         exports: {}
