@@ -282,7 +282,7 @@ test('cache (internal)', async function (t) {
   t.is(boot.start(), true)
   t.alike(cache, { '/index.js': { exports: true }, '/data.json': { exports: { leet: 1337 } } })
 
-  // + cache alike
+  // stringify() does not expose a cache to check against
   const source = boot.stringify()
   t.is(eval(source), true) // eslint-disable-line no-eval
 })
