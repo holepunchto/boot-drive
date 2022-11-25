@@ -75,10 +75,17 @@ module.exports = class Boot {
     return run(this.first.module)
 
     function run (mod) {
-      if (cache[mod.filename]) return cache[mod.filename]
+      if (cache[mod.filename]) {
+        return mod.type === 'json' ? cache[mod.filename].exports : cache[mod.filename]
+      }
 
       const m = cache[mod.filename] = {
         exports: {}
+      }
+
+      if (mod.type === 'json') {
+        m.exports = JSON.parse(mod.source)
+        return m.exports
       }
 
       require.cache = cache
@@ -99,13 +106,7 @@ module.exports = class Boot {
         if (req === 'node-gyp-build') return (dirname) => nodeRequire(path.resolve(self.cwd, self.prebuilds.get(dirname)))
 
         const dep = linker.modules.get(output)
-
-        if (dep.type === 'json') {
-          m.exports = JSON.parse(dep.source)
-          return m.exports
-        }
-
-        return run(dep).exports
+        return dep.type === 'json' ? run(dep) : run(dep).exports
       }
     }
   }
@@ -162,10 +163,17 @@ module.exports = class Boot {
 
     // on purpose very similar to run() of start() to try re-use it
     function run (mod, cache = {}) {
-      if (cache[mod.filename]) return cache[mod.filename]
+      if (cache[mod.filename]) {
+        return mod.type === 'json' ? cache[mod.filename].exports : cache[mod.filename]
+      }
 
       const m = cache[mod.filename] = {
         exports: {}
+      }
+
+      if (mod.type === 'json') {
+        m.exports = JSON.parse(mod.source)
+        return m.exports
       }
 
       require.cache = cache
@@ -187,13 +195,7 @@ module.exports = class Boot {
         if (req === 'node-gyp-build') return () => nodeRequire(r.output) // eslint-disable-line no-undef
 
         const dep = dependencies[r.output]
-
-        if (dep.type === 'json') {
-          m.exports = JSON.parse(dep.source)
-          return m.exports
-        }
-
-        return run(dep, cache).exports
+        return dep.type === 'json' ? run(dep, cache) : run(dep, cache).exports
       }
     }
   }
