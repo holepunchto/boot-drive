@@ -100,7 +100,10 @@ module.exports = class Boot {
 
         const dep = linker.modules.get(output)
 
-        if (dep.type === 'json') return JSON.parse(dep.source)
+        if (dep.type === 'json') {
+          m.exports = JSON.parse(dep.source)
+          return m.exports
+        }
 
         return run(dep).exports
       }
@@ -185,7 +188,10 @@ module.exports = class Boot {
 
         const dep = dependencies[r.output]
 
-        if (dep.type === 'json') return JSON.parse(dep.source)
+        if (dep.type === 'json') {
+          m.exports = JSON.parse(dep.source)
+          return m.exports
+        }
 
         return run(dep, cache).exports
       }
