@@ -106,7 +106,13 @@ module.exports = class Boot {
         }
 
         const output = resolve(mod, req)
-        if (!output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
+
+        if (output === false) {
+          const isPath = req[0] === '.' || req[0] === '/'
+          return nodeRequire(isPath ? path.resolve(self.cwd, req) : req)
+        }
+
+        if (output === null) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
 
         if (req === 'node-gyp-build') return (dirname) => nodeRequire(path.resolve(self.cwd, self.prebuilds.get(dirname)))
 
@@ -189,9 +195,9 @@ module.exports = class Boot {
       function require (req) {
         const r = mod.requires[req]
 
-        if (r.shouldNodeRequire) {
-          return nodeRequire(r.output) // eslint-disable-line no-undef
-        }
+        if (!r) return nodeRequire(req) // eslint-disable-line no-undef
+
+        if (r.shouldNodeRequire) return nodeRequire(r.output) // eslint-disable-line no-undef
 
         if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
 
@@ -206,12 +212,9 @@ module.exports = class Boot {
 
 function resolve (mod, input) {
   for (const r of mod.resolutions) {
-    if (r.input === input) {
-      if (!r.output) break
-      return r.output
-    }
+    if (r.input === input) return r.output
   }
-  return null
+  return false
 }
 
 async function atomicWriteFile (filename, buffer) {
