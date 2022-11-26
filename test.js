@@ -287,6 +287,61 @@ test('cache (internal)', async function (t) {
   t.is(eval(source), true) // eslint-disable-line no-eval
 })
 
+test('normal require should use internal require', async function (t) {
+  const [drive] = create()
+
+  await drive.put('/index.js', Buffer.from(`
+    const func = require("./func.js")
+  `))
+
+  const cache = {}
+  const boot = new Boot(drive, { cache })
+  await boot.warmup()
+
+  try {
+    boot.start()
+    t.fail('should have failed to start')
+  } catch (error) {
+    t.is(error.code, undefined)
+    t.ok(error.message.startsWith('Could not resolve'))
+  }
+
+  try {
+    eval(boot.stringify()) // eslint-disable-line no-eval
+    t.fail('should have failed to eval stringify source')
+  } catch (error) {
+    t.is(error.code, undefined)
+    t.ok(error.message.startsWith('Could not resolve'))
+  }
+})
+
+test('generic require should use node require', async function (t) {
+  const [drive] = create()
+
+  await drive.put('/index.js', Buffer.from(`
+    const generic = (key) => require(key)
+    const func = generic("./func.js")
+  `))
+
+  const cache = {}
+  const boot = new Boot(drive, { cache })
+  await boot.warmup()
+
+  try {
+    boot.start()
+  } catch (error) {
+    t.is(error.code, 'MODULE_NOT_FOUND')
+    t.ok(error.message.startsWith('Cannot find module'))
+  }
+
+  try {
+    eval(boot.stringify()) // eslint-disable-line no-eval
+  } catch (error) {
+    t.is(error.code, 'MODULE_NOT_FOUND')
+    t.ok(error.message.startsWith('Cannot find module'))
+  }
+})
+
 async function replicate (t, bootstrap, corestore, drive, { server = false, client = false } = {}) {
   await drive.ready()
 
