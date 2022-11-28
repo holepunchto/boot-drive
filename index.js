@@ -106,7 +106,7 @@ module.exports = class Boot {
           return nodeRequire(req)
         }
 
-        const r = resolutions[req]
+        const r = resolutions.get(req)
         const isPath = req[0] === '.' || req[0] === '/'
 
         if (!r && !isPath) {
@@ -222,9 +222,9 @@ function resolve (mod, input) {
 }
 
 function getResolutions (mod) {
-  const res = {}
+  const res = new Map()
   for (const r of mod.resolutions) {
-    res[r.input] = r
+    res.set(r.input, r)
   }
   return res
 }
