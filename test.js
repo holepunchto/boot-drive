@@ -349,7 +349,6 @@ test('generic require should use fail for paths', async function (t) {
   const boot = new Boot(drive)
   await boot.warmup()
 
-  // start() is using boot-drive require
   try {
     boot.start()
     t.fail('should have failed')
@@ -357,7 +356,6 @@ test('generic require should use fail for paths', async function (t) {
     t.ok(isBootRequire(error))
   }
 
-  // stringify() is using node require
   try {
     eval(boot.stringify()) // eslint-disable-line no-eval
     t.fail('should have failed')
@@ -379,7 +377,6 @@ test('generic require', async function (t) {
   const boot = new Boot(drive)
   await boot.warmup()
 
-  // start() is using boot-drive require
   try {
     boot.start()
     t.fail('should have failed')
@@ -387,7 +384,6 @@ test('generic require', async function (t) {
     t.ok(isBootRequire(error))
   }
 
-  // stringify() is using node require
   try {
     eval(boot.stringify()) // eslint-disable-line no-eval
     t.fail('should have failed')
