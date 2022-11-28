@@ -294,8 +294,7 @@ test('normal require should use internal require', async function (t) {
     const func = require("./func.js")
   `))
 
-  const cache = {}
-  const boot = new Boot(drive, { cache })
+  const boot = new Boot(drive)
   await boot.warmup()
 
   try {
@@ -323,8 +322,7 @@ test('generic require should use node require for non-paths', async function (t)
     const func = generic("some-lib")
   `))
 
-  const cache = {}
-  const boot = new Boot(drive, { cache })
+  const boot = new Boot(drive)
   await boot.warmup()
 
   try {
@@ -352,8 +350,39 @@ test('generic require should use fail for paths', async function (t) {
     const func = generic("./func.js")
   `))
 
-  const cache = {}
-  const boot = new Boot(drive, { cache })
+  const boot = new Boot(drive)
+  await boot.warmup()
+
+  // start() is using boot-drive require
+  try {
+    boot.start()
+    t.fail('should have failed')
+  } catch (error) {
+    t.is(error.code, undefined)
+    t.ok(error.message.startsWith('Could not resolve'))
+  }
+
+  // stringify() is using node require
+  try {
+    eval(boot.stringify()) // eslint-disable-line no-eval
+    t.fail('should have failed')
+  } catch (error) {
+    t.is(error.code, 'MODULE_NOT_FOUND')
+    t.ok(error.message.startsWith('Cannot find module'))
+  }
+})
+
+test('generic require', async function (t) {
+  const [drive] = create()
+
+  await drive.put('/index.js', Buffer.from(`
+    const generic = (key) => require(key)
+    const func = generic("./func.js")
+    module.exports = func()
+  `))
+  await drive.put('/func.js', Buffer.from('module.exports = () => "hello func"'))
+
+  const boot = new Boot(drive)
   await boot.warmup()
 
   // start() is using boot-drive require
