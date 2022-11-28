@@ -93,6 +93,7 @@ module.exports = class Boot {
         return m.exports
       }
 
+      const resolutions = getResolutions(mod)
       require.cache = cache
 
       const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', mod.source) // eslint-disable-line no-new-func
@@ -105,18 +106,18 @@ module.exports = class Boot {
           return nodeRequire(req)
         }
 
-        const output = resolve(mod, req)
+        const r = resolutions[req]
         const isPath = req[0] === '.' || req[0] === '/'
 
-        if (output === false && !isPath) {
+        if (!r && !isPath) {
           return nodeRequire(req)
         }
 
-        if (!output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
+        if (!r || !r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
 
         if (req === 'node-gyp-build') return (dirname) => nodeRequire(path.resolve(self.cwd, self.prebuilds.get(dirname)))
 
-        const dep = linker.modules.get(output)
+        const dep = linker.modules.get(r.output)
         return run(dep)
       }
     }
@@ -212,9 +213,20 @@ module.exports = class Boot {
 
 function resolve (mod, input) {
   for (const r of mod.resolutions) {
-    if (r.input === input) return r.output
+    if (r.input === input) {
+      if (!r.output) break
+      return r.output
+    }
   }
-  return false
+  return null
+}
+
+function getResolutions (mod) {
+  const res = {}
+  for (const r of mod.resolutions) {
+    res[r.input] = r
+  }
+  return res
 }
 
 async function atomicWriteFile (filename, buffer) {
