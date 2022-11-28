@@ -106,13 +106,13 @@ module.exports = class Boot {
         }
 
         const output = resolve(mod, req)
+        const isPath = req[0] === '.' || req[0] === '/'
 
-        if (output === false) {
-          const isPath = req[0] === '.' || req[0] === '/'
-          return nodeRequire(isPath ? path.resolve(self.cwd, req) : req)
+        if (output === false && !isPath) {
+          return nodeRequire(req)
         }
 
-        if (output === null) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
+        if (!output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
 
         if (req === 'node-gyp-build') return (dirname) => nodeRequire(path.resolve(self.cwd, self.prebuilds.get(dirname)))
 
