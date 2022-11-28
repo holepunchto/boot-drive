@@ -301,16 +301,14 @@ test('normal require should use internal require', async function (t) {
     boot.start()
     t.fail('should have failed to start')
   } catch (error) {
-    t.is(error.code, undefined)
-    t.ok(error.message.startsWith('Could not resolve'))
+    t.ok(isBootRequire(error))
   }
 
   try {
     eval(boot.stringify()) // eslint-disable-line no-eval
     t.fail('should have failed to eval stringify source')
   } catch (error) {
-    t.is(error.code, undefined)
-    t.ok(error.message.startsWith('Could not resolve'))
+    t.ok(isBootRequire(error))
   }
 })
 
@@ -329,16 +327,14 @@ test('generic require should use node require for non-paths', async function (t)
     boot.start()
     t.fail('should have failed')
   } catch (error) {
-    t.is(error.code, 'MODULE_NOT_FOUND')
-    t.ok(error.message.startsWith('Cannot find module'))
+    t.ok(isNodeRequire(error))
   }
 
   try {
     eval(boot.stringify()) // eslint-disable-line no-eval
     t.fail('should have failed')
   } catch (error) {
-    t.is(error.code, 'MODULE_NOT_FOUND')
-    t.ok(error.message.startsWith('Cannot find module'))
+    t.ok(isNodeRequire(error))
   }
 })
 
@@ -358,8 +354,7 @@ test('generic require should use fail for paths', async function (t) {
     boot.start()
     t.fail('should have failed')
   } catch (error) {
-    t.is(error.code, undefined)
-    t.ok(error.message.startsWith('Could not resolve'))
+    t.ok(isBootRequire(error))
   }
 
   // stringify() is using node require
@@ -367,8 +362,7 @@ test('generic require should use fail for paths', async function (t) {
     eval(boot.stringify()) // eslint-disable-line no-eval
     t.fail('should have failed')
   } catch (error) {
-    t.is(error.code, 'MODULE_NOT_FOUND')
-    t.ok(error.message.startsWith('Cannot find module'))
+    t.ok(isNodeRequire(error))
   }
 })
 
@@ -390,8 +384,7 @@ test('generic require', async function (t) {
     boot.start()
     t.fail('should have failed')
   } catch (error) {
-    t.is(error.code, undefined)
-    t.ok(error.message.startsWith('Could not resolve'))
+    t.ok(isBootRequire(error))
   }
 
   // stringify() is using node require
@@ -399,10 +392,17 @@ test('generic require', async function (t) {
     eval(boot.stringify()) // eslint-disable-line no-eval
     t.fail('should have failed')
   } catch (error) {
-    t.is(error.code, 'MODULE_NOT_FOUND')
-    t.ok(error.message.startsWith('Cannot find module'))
+    t.ok(isNodeRequire(error))
   }
 })
+
+function isNodeRequire (error) {
+  return error.code === 'MODULE_NOT_FOUND' && error.message.startsWith('Cannot find module')
+}
+
+function isBootRequire (error) {
+  return error.code === undefined && error.message.startsWith('Could not resolve')
+}
 
 async function replicate (t, bootstrap, corestore, drive, { server = false, client = false } = {}) {
   await drive.ready()
