@@ -37,13 +37,14 @@ module.exports = class Boot {
     if (!hasBuilds) return
 
     let dirname = mod.dirname
-    while (dirname !== '/' && !(await this.drive.entry(dirname + '/package.json'))) {
+    let buffer
+    while (true) {
+      const entrypath = dirname + '/prebuilds/' + process.platform + '-' + process.arch + '/node.napi.node'
+      buffer = await this.drive.get(entrypath)
+      if (buffer) break
+      if (dirname === '/') return
       dirname = unixResolve(dirname, '..')
     }
-
-    const entrypath = dirname + '/prebuilds/' + process.platform + '-' + process.arch + '/node.napi.node'
-    const buffer = await this.drive.get(entrypath)
-    if (!buffer) return
 
     const basename = mod.package?.name + '-' + generichash(buffer) + '.node'
     const filename = path.resolve(this.cwd, 'prebuilds', basename)
