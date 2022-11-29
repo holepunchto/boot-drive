@@ -6,6 +6,7 @@ const fsp = require('fs/promises')
 const ScriptLinker = require('script-linker')
 const sodium = require('sodium-native')
 const b4a = require('b4a')
+const unixResolve = require('unix-path-resolve')
 
 module.exports = class Boot {
   constructor (drive, opts = {}) {
@@ -35,7 +36,14 @@ module.exports = class Boot {
     const hasBuilds = resolve(mod, 'node-gyp-build')
     if (!hasBuilds) return
 
-    const entrypath = mod.dirname + '/prebuilds/' + process.platform + '-' + process.arch + '/node.napi.node'
+    let dirname = mod.dirname
+    while (dirname !== '/') {
+      const has = await this.drive.entry(unixResolve(dirname, 'package.json'))
+      if (has) break
+      dirname = unixResolve(dirname, '..')
+    }
+
+    const entrypath = dirname + '/prebuilds/' + process.platform + '-' + process.arch + '/node.napi.node'
     const buffer = await this.drive.get(entrypath)
     if (!buffer) return
 
