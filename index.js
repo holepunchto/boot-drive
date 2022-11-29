@@ -37,9 +37,7 @@ module.exports = class Boot {
     if (!hasBuilds) return
 
     let dirname = mod.dirname
-    while (dirname !== '/') {
-      const has = await this.drive.entry(unixResolve(dirname, 'package.json'))
-      if (has) break
+    while (dirname !== '/' && !(await this.drive.entry(dirname + '/package.json'))) {
       dirname = unixResolve(dirname, '..')
     }
 
