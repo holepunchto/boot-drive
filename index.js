@@ -113,7 +113,7 @@ module.exports = class Boot {
           return nodeRequire(req)
         }
 
-        if (!r || !r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
+        if (!r || !r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname + ' (' + mod.filename + ')')
 
         if (req === 'node-gyp-build') return (dirname) => nodeRequire(path.resolve(self.cwd, self.prebuilds.get(dirname)))
 
@@ -200,7 +200,7 @@ module.exports = class Boot {
 
         if (r.shouldNodeRequire) return nodeRequire(r.output) // eslint-disable-line no-undef
 
-        if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
+        if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname + ' (' + mod.filename + ')')
 
         if (req === 'node-gyp-build') return () => nodeRequire(r.output) // eslint-disable-line no-undef
 
