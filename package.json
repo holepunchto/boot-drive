@@ -20,7 +20,8 @@
   "dependencies": {
     "b4a": "^1.6.1",
     "script-linker": "github:holepunchto/script-linker",
-    "sodium-native": "^3.4.1"
+    "sodium-native": "^3.4.1",
+    "unix-path-resolve": "^1.0.2"
   },
   "devDependencies": {
     "@hyperswarm/testnet": "^3.1.0",
