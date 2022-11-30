@@ -338,7 +338,7 @@ test('generic require should use node require for non-paths', async function (t)
   }
 })
 
-test('generic require should use fail for paths', async function (t) {
+test('generic require should fail for paths', async function (t) {
   const [drive] = create()
 
   await drive.put('/index.js', Buffer.from(`
