@@ -12,11 +12,14 @@ module.exports = class Boot {
   constructor (drive, opts = {}) {
     this.drive = drive
     this.modules = new Set(builtinModules)
+    this.cache = opts.cache || {}
 
     this.entrypoint = opts.entrypoint || null
+    this.first = null
+    this.dependencies = opts.dependencies || new Map()
+
     this.cwd = opts.cwd || '.'
     this.prebuilds = new Map()
-    this.cache = opts.cache || {}
 
     this.linker = new ScriptLinker({
       cacheSize: Infinity,
@@ -28,8 +31,6 @@ module.exports = class Boot {
     })
 
     if (opts.modules) for (const name of opts.modules) this.modules.add(name)
-
-    this.first = null
   }
 
   async _savePrebuildToDisk (mod) {
@@ -67,7 +68,7 @@ module.exports = class Boot {
 
     this.first = null
 
-    for await (const dep of this.linker.dependencies(this.entrypoint)) {
+    for await (const dep of this.linker.dependencies(this.entrypoint, {}, new Set(), this.dependencies)) {
       if (!this.first) this.first = dep
 
       await this._savePrebuildToDisk(dep.module)
