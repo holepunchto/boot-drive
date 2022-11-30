@@ -20,7 +20,10 @@ test('basic', async function (t) {
   const boot = new Boot(drive)
   t.is(boot.cwd, '.')
 
+  t.is(boot.visited.size, 0)
   await boot.warmup()
+  t.is(boot.visited.size, 1)
+  t.ok(boot.visited.has('c/index.js'))
 
   t.is(boot.start(), 'hello')
 })
