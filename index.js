@@ -22,7 +22,6 @@ module.exports = class Boot {
     this.prebuilds = new Map()
 
     this.linker = new ScriptLinker({
-      cacheSize: Infinity,
       readFile: async (name) => {
         const buffer = await this.drive.get(name)
         if (!buffer) throw new Error('ENOENT: ' + name)
