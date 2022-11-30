@@ -76,7 +76,7 @@ module.exports = class Boot {
 
   start () {
     const self = this
-    const nodeRequire = require
+    const nodeRequire = require.node || require
     const { linker, modules, cache } = this
 
     return run(this.main.module)
@@ -94,6 +94,7 @@ module.exports = class Boot {
       }
 
       require.cache = cache
+      require.node = nodeRequire
 
       const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', mod.source) // eslint-disable-line no-new-func
       wrap(require, mod.dirname, mod.filename, m, m.exports)
@@ -180,6 +181,7 @@ module.exports = class Boot {
       }
 
       require.cache = cache
+      require.node = nodeRequire // eslint-disable-line no-undef
 
       const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', mod.source) // eslint-disable-line no-new-func
       wrap(require, mod.dirname, mod.filename, m, m.exports)
