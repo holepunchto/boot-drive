@@ -165,11 +165,10 @@ module.exports = class Boot {
     return `
     'use strict'
 
-    global.__BOOT_CACHE__ = {}
     const dependencies = ${JSON.stringify(dependencies, null, 2)}
     const nodeRequire = require
 
-    run(dependencies['${this.first.module.filename}'], __BOOT_CACHE__)
+    run(dependencies['${this.first.module.filename}'])
 
     ${run.toString()}
     `.trim()
@@ -209,11 +208,6 @@ module.exports = class Boot {
         return run(dep, cache)
       }
     }
-  }
-
-  // Only available when running from a stringified source
-  static get cache () {
-    return typeof __BOOT_CACHE__ === 'undefined' ? null /* or {}? */ : __BOOT_CACHE__
   }
 }
 
