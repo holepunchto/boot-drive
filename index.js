@@ -57,7 +57,7 @@ module.exports = class Boot {
     this.prebuilds.set(mod.dirname, './prebuilds/' + basename)
   }
 
-  async warmup () {
+  async warmup ({ visited = new Set() } = {}) {
     if (!this.entrypoint) {
       const pkg = await this.drive.get('/package.json')
       this.entrypoint = JSON.parse(pkg || '{}').main
@@ -67,7 +67,7 @@ module.exports = class Boot {
 
     this.first = null
 
-    for await (const dep of this.linker.dependencies(this.entrypoint)) {
+    for await (const dep of this.linker.dependencies(this.entrypoint, null, visited)) {
       if (!this.first) this.first = dep
 
       await this._savePrebuildToDisk(dep.module)
