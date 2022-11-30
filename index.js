@@ -61,7 +61,7 @@ module.exports = class Boot {
       this.entrypoint = JSON.parse(pkg || '{}').main
       if (!this.entrypoint) this.entrypoint = 'index.js'
     }
-    this.entrypoint = path.resolve('/', this.entrypoint)
+    this.entrypoint = unixResolve('/', this.entrypoint)
 
     this.main = null
 
