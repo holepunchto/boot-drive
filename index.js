@@ -165,7 +165,7 @@ module.exports = class Boot {
     return `
     'use strict'
 
-    const __BOOT_CACHE__ = {}
+    global.__BOOT_CACHE__ = {}
     const dependencies = ${JSON.stringify(dependencies, null, 2)}
     const nodeRequire = require
 
