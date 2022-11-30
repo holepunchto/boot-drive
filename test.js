@@ -166,7 +166,7 @@ test('require module with prebuilds', async function (t) {
   await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
 })
 
-test('add module', async function (t) {
+/* test('add module', async function (t) {
   const [drive] = create()
 
   const sodium = require('sodium-native')
@@ -186,7 +186,7 @@ test('add module', async function (t) {
   await boot.warmup()
 
   t.is(boot.start(), 64)
-})
+}) */
 
 test('remote drive', async function (t) {
   const { bootstrap } = await createTestnet(3, t.teardown)
