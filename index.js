@@ -63,6 +63,7 @@ module.exports = class Boot {
     }
     this.entrypoint = unixResolve('/', this.entrypoint)
 
+    console.log('warmup entrypoint:', this.entrypoint)
     this.main = null
 
     for await (const dep of this.linker.dependencies(this.entrypoint, {}, new Set(), this.dependencies)) {
@@ -70,6 +71,8 @@ module.exports = class Boot {
 
       await this._savePrebuildToDisk(dep.module)
     }
+
+    console.log('warmup main', this.main && this.main.module ? this.main.module.filename : this.main)
   }
 
   start () {
@@ -80,6 +83,8 @@ module.exports = class Boot {
     return run(this.main.module)
 
     function run (mod) {
+      console.log('run', mod ? mod.filename : mod)
+
       if (cache[mod.filename]) return cache[mod.filename].exports
 
       const m = cache[mod.filename] = {
