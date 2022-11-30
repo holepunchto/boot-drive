@@ -15,7 +15,7 @@ module.exports = class Boot {
     this.cache = opts.cache || {}
 
     this.entrypoint = opts.entrypoint || null
-    this.first = null
+    this.main = null
     this.dependencies = opts.dependencies || new Map()
 
     this.cwd = opts.cwd || '.'
@@ -66,10 +66,10 @@ module.exports = class Boot {
     }
     this.entrypoint = path.resolve('/', this.entrypoint)
 
-    this.first = null
+    this.main = null
 
     for await (const dep of this.linker.dependencies(this.entrypoint, {}, new Set(), this.dependencies)) {
-      if (!this.first) this.first = dep
+      if (!this.main) this.main = dep
 
       await this._savePrebuildToDisk(dep.module)
     }
@@ -80,7 +80,7 @@ module.exports = class Boot {
     const nodeRequire = require
     const { linker, modules, cache } = this
 
-    return run(this.first.module)
+    return run(this.main.module)
 
     function run (mod) {
       if (cache[mod.filename]) return cache[mod.filename].exports
@@ -154,7 +154,7 @@ module.exports = class Boot {
   }
 
   stringify () {
-    const dependencies = this._bundleDeps(this.first.module)
+    const dependencies = this._bundleDeps(this.main.module)
 
     return `
     'use strict'
@@ -162,7 +162,7 @@ module.exports = class Boot {
     const dependencies = ${JSON.stringify(dependencies, null, 2)}
     const nodeRequire = require
 
-    run(dependencies['${this.first.module.filename}'])
+    run(dependencies['${this.main.module.filename}'])
 
     ${run.toString()}
     `.trim()
