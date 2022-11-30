@@ -37,7 +37,7 @@ module.exports = class Boot {
     if (!hasBuilds) return
 
     let dirname = mod.dirname
-    let buffer
+    let buffer = null
     while (true) {
       const entrypath = dirname + '/prebuilds/' + process.platform + '-' + process.arch + '/node.napi.node'
       buffer = await this.drive.get(entrypath)
