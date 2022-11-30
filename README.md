@@ -39,12 +39,14 @@ Available `options`:
   entrypoint: null,
   modules: [],
   cwd: '.',
-  cache: {}
+  cache: {},
+  visited: new Set()
 }
 ```
 
 `modules` is used to add more native modules.\
-`cwd` is the working directory for `prebuilds/` (default: `.`).
+`cwd` is the working directory for `prebuilds/` (default: `.`).\
+`visited` is used in `warmup()`, you can share visited deps between boots.
 
 #### `boot.modules`
 

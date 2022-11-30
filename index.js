@@ -16,7 +16,7 @@ module.exports = class Boot {
 
     this.entrypoint = opts.entrypoint || null
     this.first = null
-    this.visited = new Set()
+    this.visited = opts.visited || new Set()
 
     this.cwd = opts.cwd || '.'
     this.prebuilds = new Map()
