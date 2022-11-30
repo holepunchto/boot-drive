@@ -39,12 +39,14 @@ Available `options`:
   entrypoint: null,
   modules: [],
   cwd: '.',
-  cache: {}
+  cache: {},
+  dependencies: new Map()
 }
 ```
 
 `modules` is used to add more native modules.\
-`cwd` is the working directory for `prebuilds/` (default: `.`).
+`cwd` is the working directory for `prebuilds/` (default: `.`).\
+`dependencies` is used in `warmup()`, you can share linker deps between boots.
 
 #### `boot.modules`
 

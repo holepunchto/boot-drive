@@ -18,8 +18,6 @@ test('basic', async function (t) {
   await drive.put('/index.js', Buffer.from('module.exports = "hello"'))
 
   const boot = new Boot(drive)
-  t.is(boot.cwd, '.')
-
   await boot.warmup()
 
   t.is(boot.start(), 'hello')
@@ -75,11 +73,46 @@ test('entrypoint not found', async function (t) {
   }
 })
 
-test('change prebuilds path', async function (t) {
+test('default working directory', async function (t) {
+  const [drive] = create()
+
+  const boot = new Boot(drive)
+  t.is(boot.cwd, '.')
+})
+
+test('change working directory', async function (t) {
   const [drive] = create()
 
   const boot = new Boot(drive, { cwd: './working-dir' })
   t.is(boot.cwd, './working-dir')
+})
+
+test('dependencies', async function (t) {
+  const [drive] = create()
+
+  await drive.put('/index.js', Buffer.from('module.exports = "hello"'))
+
+  const boot = new Boot(drive)
+  t.is(boot.dependencies.size, 0)
+  await boot.warmup()
+  t.is(boot.dependencies.size, 1)
+  t.ok(boot.dependencies.has('/index.js'))
+  t.is(boot.start(), 'hello')
+
+  await drive.del('/index.js')
+
+  try {
+    const boot2 = new Boot(drive)
+    await boot2.warmup()
+    t.fail('should have failed to warmup')
+  } catch (error) {
+    t.is(error.message, 'ENOENT: /index.js')
+  }
+
+  const boot3 = new Boot(drive, { dependencies: boot.dependencies })
+  t.is(boot3.dependencies, boot.dependencies)
+  await boot3.warmup()
+  t.is(boot3.start(), 'hello')
 })
 
 test('require file within drive', async function (t) {
