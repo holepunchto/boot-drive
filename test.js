@@ -18,12 +18,7 @@ test('basic', async function (t) {
   await drive.put('/index.js', Buffer.from('module.exports = "hello"'))
 
   const boot = new Boot(drive)
-  t.is(boot.cwd, '.')
-
-  t.is(boot.visited.size, 0)
   await boot.warmup()
-  t.is(boot.visited.size, 1)
-  t.ok(boot.visited.has('c/index.js'))
 
   t.is(boot.start(), 'hello')
 })
@@ -78,11 +73,39 @@ test('entrypoint not found', async function (t) {
   }
 })
 
-test('change prebuilds path', async function (t) {
+test('default working directory', async function (t) {
+  const [drive] = create()
+
+  const boot = new Boot(drive)
+  t.is(boot.cwd, '.')
+})
+
+test('change working directory', async function (t) {
   const [drive] = create()
 
   const boot = new Boot(drive, { cwd: './working-dir' })
   t.is(boot.cwd, './working-dir')
+})
+
+test('visited dependencies', async function (t) {
+  const [drive] = create()
+
+  await drive.put('/index.js', Buffer.from('module.exports = "hello"'))
+
+  const boot = new Boot(drive)
+  t.is(boot.visited.size, 0)
+  await boot.warmup()
+  t.is(boot.visited.size, 1)
+  t.ok(boot.visited.has('c/index.js'))
+  t.is(boot.start(), 'hello')
+
+  const boot2 = new Boot(drive, { visited: boot.visited })
+  t.is(boot2.visited.size, 1)
+  t.ok(boot2.visited.has('c/index.js'))
+  await boot2.warmup()
+  t.is(boot2.visited.size, 1)
+  t.ok(boot2.visited.has('c/index.js'))
+  t.is(boot2.start(), 'hello')
 })
 
 test('require file within drive', async function (t) {
