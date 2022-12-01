@@ -52,7 +52,7 @@ module.exports = class Boot {
       await atomicWriteFile(filename, buffer)
     }
 
-    this.prebuilds.set(mod.dirname, './prebuilds/' + basename)
+    this.prebuilds.set(dirname, './prebuilds/' + basename)
   }
 
   async warmup () {
@@ -107,7 +107,7 @@ module.exports = class Boot {
         const output = resolve(mod, req)
         if (!output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
 
-        if (req === 'node-gyp-build') return (dirname) => nodeRequire(path.resolve(self.cwd, self.prebuilds.get(dirname)))
+        if (req === 'node-gyp-build') return (dirname) => nodeRequire(path.resolve(self.cwd, self.prebuilds.get(unixResolve(dirname))))
 
         const dep = self.dependencies.get(output)
         return run(dep)
