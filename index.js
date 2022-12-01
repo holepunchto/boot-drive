@@ -75,7 +75,7 @@ module.exports = class Boot {
   start () {
     const self = this
     const nodeRequire = require.node || require
-    const { linker, cache } = this
+    const { cache } = this
 
     return run(this.main.module)
 
@@ -109,7 +109,7 @@ module.exports = class Boot {
 
         if (req === 'node-gyp-build') return (dirname) => nodeRequire(path.resolve(self.cwd, self.prebuilds.get(dirname)))
 
-        const dep = linker.modules.get(output)
+        const dep = self.dependencies.get(output)
         return run(dep)
       }
     }
@@ -144,7 +144,7 @@ module.exports = class Boot {
 
         dep.requires[r.input] = { output: r.output }
 
-        stack.push(this.linker.modules.get(r.output))
+        stack.push(this.dependencies.get(r.output))
       }
     }
 
