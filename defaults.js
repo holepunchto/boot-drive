@@ -3,16 +3,20 @@ const nodeRequire = require.node || require
 let builtinModules = null
 const builtins = {
   has (req) {
-    if (builtinModules === null) builtinModules = nodeRequire('module').builtinModules || []
-    return builtinModules.includes(req)
+    return getBuiltins().includes(req)
   },
   get (req) {
     return nodeRequire(req)
   },
   keys () {
-    if (builtinModules === null) builtinModules = nodeRequire('module').builtinModules || []
-    return builtinModules
+    return getBuiltins()
   }
 }
 
 module.exports = { builtins }
+
+function getBuiltins () {
+  if (builtinModules !== null) return builtinModules
+  builtinModules = nodeRequire('module').builtinModules || []
+  return builtinModules
+}
