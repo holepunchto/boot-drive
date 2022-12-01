@@ -37,23 +37,14 @@ Available `options`:
 ```js
 {
   entrypoint: null,
-  modules: [],
   cwd: '.',
   cache: {},
   dependencies: new Map()
 }
 ```
 
-`modules` is used to add more native modules.\
 `cwd` is the working directory for `prebuilds/` (default: `.`).\
 `dependencies` is used in `warmup()`, you can share linker deps between boots.
-
-#### `boot.modules`
-
-List of modules that are included in the boot process.\
-By default it contains all the native modules.
-
-Add more by `boot.modules.add(name)` or using `options` from the constructor.
 
 #### `await boot.warmup()`
 

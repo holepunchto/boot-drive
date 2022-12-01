@@ -1,17 +1,16 @@
 'use strict'
 
-const { builtinModules } = require('module')
 const path = require('path')
 const fsp = require('fs/promises')
 const ScriptLinker = require('script-linker')
 const sodium = require('sodium-native')
 const b4a = require('b4a')
 const unixResolve = require('unix-path-resolve')
+const { builtins } = require('./defaults.js')
 
 module.exports = class Boot {
   constructor (drive, opts = {}) {
     this.drive = drive
-    this.modules = new Set(builtinModules)
     this.cache = opts.cache || {}
 
     this.entrypoint = opts.entrypoint || null
@@ -26,10 +25,9 @@ module.exports = class Boot {
         const buffer = await this.drive.get(name)
         if (!buffer) throw new Error('ENOENT: ' + name)
         return buffer
-      }
+      },
+      builtins
     })
-
-    if (opts.modules) for (const name of opts.modules) this.modules.add(name)
   }
 
   async _savePrebuildToDisk (mod) {
@@ -63,7 +61,7 @@ module.exports = class Boot {
       this.entrypoint = JSON.parse(pkg || '{}').main
       if (!this.entrypoint) this.entrypoint = 'index.js'
     }
-    this.entrypoint = path.resolve('/', this.entrypoint)
+    this.entrypoint = unixResolve('/', this.entrypoint)
 
     this.main = null
 
@@ -77,7 +75,7 @@ module.exports = class Boot {
   start () {
     const self = this
     const nodeRequire = require.node || require
-    const { modules, cache } = this
+    const { cache } = this
 
     return run(this.main.module)
 
@@ -102,7 +100,7 @@ module.exports = class Boot {
       return m.exports
 
       function require (req) {
-        if (modules.has(req)) {
+        if (builtins.has(req)) {
           return nodeRequire(req)
         }
 
@@ -132,7 +130,7 @@ module.exports = class Boot {
       }
 
       for (const r of mod.resolutions) {
-        const isModule = this.modules.has(r.input)
+        const isModule = builtins.has(r.input)
 
         if (isModule || !r.output) {
           dep.requires[r.input] = { output: r.output, shouldNodeRequire: isModule }

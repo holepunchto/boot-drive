@@ -166,7 +166,7 @@ test('require module with prebuilds', async function (t) {
   await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
 })
 
-test('add module', async function (t) {
+test.skip('add module', async function (t) {
   const [drive] = create()
 
   const sodium = require('sodium-native')
