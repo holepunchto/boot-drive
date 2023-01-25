@@ -1,4 +1,4 @@
-const nodeRequire = require.node || require
+const builtinRequire = require.builtin || require
 
 let builtinModules = null
 const builtins = {
@@ -6,7 +6,7 @@ const builtins = {
     return getBuiltins().includes(req)
   },
   get (req) {
-    return nodeRequire(req)
+    return builtinRequire(req)
   },
   keys () {
     return getBuiltins()
@@ -17,6 +17,6 @@ module.exports = { builtins }
 
 function getBuiltins () {
   if (builtinModules !== null) return builtinModules
-  builtinModules = nodeRequire('module').builtinModules || []
+  builtinModules = builtinRequire('module').builtinModules || []
   return builtinModules
 }

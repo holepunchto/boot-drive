@@ -74,7 +74,7 @@ module.exports = class Boot {
 
   start () {
     const self = this
-    const nodeRequire = require.node || require
+    const builtinRequire = require.builtin || require
     const { cache } = this
 
     return run(this.main.module)
@@ -92,7 +92,7 @@ module.exports = class Boot {
       }
 
       require.cache = cache
-      require.node = nodeRequire
+      require.builtin = builtinRequire
 
       const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', mod.source) // eslint-disable-line no-new-func
       wrap(require, mod.dirname, mod.filename, m, m.exports)
@@ -101,13 +101,13 @@ module.exports = class Boot {
 
       function require (req) {
         if (builtins.has(req)) {
-          return nodeRequire(req)
+          return builtinRequire(req)
         }
 
         const output = resolve(mod, req)
         if (!output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
 
-        if (req === 'node-gyp-build') return (dirname) => nodeRequire(path.resolve(self.cwd, self.prebuilds.get(unixResolve(dirname))))
+        if (req === 'node-gyp-build') return (dirname) => builtinRequire(path.resolve(self.cwd, self.prebuilds.get(unixResolve(dirname))))
 
         const dep = self.dependencies.get(output)
         return run(dep)
@@ -158,7 +158,7 @@ module.exports = class Boot {
     'use strict'
 
     const dependencies = ${JSON.stringify(dependencies, null, 2)}
-    const nodeRequire = require
+    const builtinRequire = require
 
     run(dependencies['${this.main.module.filename}'])
 
@@ -179,7 +179,7 @@ module.exports = class Boot {
       }
 
       require.cache = cache
-      require.node = nodeRequire // eslint-disable-line no-undef
+      require.builtin = builtinRequire // eslint-disable-line no-undef
 
       const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', mod.source) // eslint-disable-line no-new-func
       wrap(require, mod.dirname, mod.filename, m, m.exports)
@@ -190,12 +190,12 @@ module.exports = class Boot {
         const r = mod.requires[req]
 
         if (r.shouldNodeRequire) {
-          return nodeRequire(r.output) // eslint-disable-line no-undef
+          return builtinRequire(r.output) // eslint-disable-line no-undef
         }
 
         if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
 
-        if (req === 'node-gyp-build') return () => nodeRequire(r.output) // eslint-disable-line no-undef
+        if (req === 'node-gyp-build') return () => builtinRequire(r.output) // eslint-disable-line no-undef
 
         const dep = dependencies[r.output]
         return run(dep, cache)
