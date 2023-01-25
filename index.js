@@ -216,7 +216,7 @@ function resolve (mod, input) {
 
 async function atomicWriteFile (filename, buffer) {
   const tmpfile = filename + '.tmp.' + Math.random()
-  await fsp.writeFile(tmpfile, buffer, { flags: 'wx' })
+  await fsp.writeFile(tmpfile, buffer, { flag: 'wx' })
   await fsp.rename(tmpfile, filename)
 }
 
