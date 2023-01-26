@@ -320,6 +320,38 @@ test('cache (internal)', async function (t) {
   t.is(eval(source), true) // eslint-disable-line no-eval
 })
 
+test.solo('capture stack trace', async function (t) {
+  const [drive] = create()
+
+  const src = new Localdrive(__dirname)
+  const m1 = new MirrorDrive(src, drive, { prefix: 'node_modules/poor-mans-source-map' })
+  await m1.done()
+
+  await drive.put('/index.js', Buffer.from(`
+    const captureStack = require('poor-mans-source-map')
+
+    foo()
+
+    function foo () {
+      captureStack([ { start: 10, end: 10, filename: '/path/to/file.js' } ])
+
+      throw new Error('test')
+    }
+  `.trim()))
+
+  const boot = new Boot(drive)
+
+  try {
+    await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
+  } catch {}
+
+  await boot.warmup()
+
+  t.is(boot.start(), 64)
+
+  await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
+})
+
 async function replicate (t, bootstrap, corestore, drive, { server = false, client = false } = {}) {
   await drive.ready()
 
