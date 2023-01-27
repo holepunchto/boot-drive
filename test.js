@@ -343,6 +343,18 @@ test('error stack', async function (t) {
     t.is(stack[1], 'at foo (/index.js:3:29)')
     t.is(stack[2], 'at eval (/index.js:2:5)')
   }
+
+  try {
+    const source = boot.stringify()
+    eval(source) // eslint-disable-line no-eval
+    t.fail('should have failed')
+  } catch (error) {
+    const stack = error.stack.split('\n').map(v => v.trim())
+
+    t.is(stack[0], 'Error: test')
+    t.is(stack[1], 'at foo (/index.js:3:29)')
+    t.is(stack[2], 'at eval (/index.js:2:5)')
+  }
 })
 
 async function replicate (t, bootstrap, corestore, drive, { server = false, client = false } = {}) {
