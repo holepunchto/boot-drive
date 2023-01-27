@@ -320,6 +320,31 @@ test('cache (internal)', async function (t) {
   t.is(eval(source), true) // eslint-disable-line no-eval
 })
 
+test('error stack', async function (t) {
+  const [drive] = create()
+
+  await drive.put('/index.js', Buffer.from(`
+    const a = 10
+    foo()
+    function foo () { throw new Error('test') }
+    const b = 10
+  `.trim()))
+
+  const boot = new Boot(drive)
+  await boot.warmup()
+
+  try {
+    boot.start()
+    t.fail('should have failed')
+  } catch (error) {
+    const stack = error.stack.split('\n').map(v => v.trim())
+
+    t.is(stack[0], 'Error: test')
+    t.is(stack[1], 'at foo (/index.js:3:29)')
+    t.is(stack[2], 'at eval (/index.js:2:5)')
+  }
+})
+
 async function replicate (t, bootstrap, corestore, drive, { server = false, client = false } = {}) {
   await drive.ready()
 
