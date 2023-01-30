@@ -94,8 +94,9 @@ module.exports = class Boot {
       require.cache = cache
       require.builtin = builtinRequire
 
-      const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', mod.source) // eslint-disable-line no-new-func
-      wrap(require, mod.dirname, mod.filename, m, m.exports)
+      const source = mod.source + '\n//# sourceURL=' + mod.filename
+      const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', '__src', 'eval(__src)') // eslint-disable-line no-new-func
+      wrap(require, mod.dirname, mod.filename, m, m.exports, source)
 
       return m.exports
 
@@ -181,8 +182,9 @@ module.exports = class Boot {
       require.cache = cache
       require.builtin = builtinRequire // eslint-disable-line no-undef
 
-      const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', mod.source) // eslint-disable-line no-new-func
-      wrap(require, mod.dirname, mod.filename, m, m.exports)
+      const source = mod.source + '\n//# sourceURL=' + mod.filename
+      const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', '__src', 'eval(__src)') // eslint-disable-line no-new-func
+      wrap(require, mod.dirname, mod.filename, m, m.exports, source)
 
       return m.exports
 
