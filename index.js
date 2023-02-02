@@ -94,7 +94,7 @@ module.exports = class Boot {
       require.cache = cache
       require.builtin = builtinRequire
 
-      const source = mod.source + '\n//# sourceURL=' + mod.filename
+      const source = mod.source + '\n//# sourceURL=.' + mod.filename
       const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', '__src', 'eval(__src)') // eslint-disable-line no-new-func
       wrap(require, mod.dirname, mod.filename, m, m.exports, source)
 
