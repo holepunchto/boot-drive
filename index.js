@@ -19,7 +19,6 @@ module.exports = class Boot {
 
     this.cwd = opts.cwd || '.'
     this.prebuilds = new Map()
-
     this.linker = new ScriptLinker({
       readFile: async (name) => {
         const buffer = await this.drive.get(name)
@@ -52,7 +51,7 @@ module.exports = class Boot {
       await atomicWriteFile(filename, buffer)
     }
 
-    this.prebuilds.set(dirname, './prebuilds/' + basename)
+    this.prebuilds.set(dirname, filename)
   }
 
   async warmup () {
@@ -161,7 +160,7 @@ module.exports = class Boot {
     const dependencies = ${JSON.stringify(dependencies, null, 2)}
     const builtinRequire = require
 
-    run(dependencies['${this.main.module.filename}'])
+    module.exports = run(dependencies['${this.main.module.filename}'])
 
     ${run.toString()}
     `.trim()
@@ -190,6 +189,8 @@ module.exports = class Boot {
 
       function require (req) {
         const r = mod.requires[req]
+
+        if (req === 'electron') return builtinRequire('electron')
 
         if (r.shouldNodeRequire) {
           return builtinRequire(r.output) // eslint-disable-line no-undef
