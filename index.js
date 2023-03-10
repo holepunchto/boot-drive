@@ -50,8 +50,8 @@ module.exports = class Boot {
       await fsp.mkdir(path.dirname(filename), { recursive: true })
       await atomicWriteFile(filename, buffer)
     }
-
-    this.prebuilds.set(dirname, filename)
+    const local = this.drive.constructor.name === 'Localdrive' && this.drive.root // duck-type check
+    this.prebuilds.set(dirname, local ? filename : './prebuilds/' + basename)
   }
 
   async warmup () {
