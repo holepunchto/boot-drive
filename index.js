@@ -90,6 +90,7 @@ module.exports = class Boot {
         return m.exports
       }
 
+      require.main = cache[self.main.module.filename]
       require.cache = cache
       require.builtin = builtinRequire
 
@@ -159,8 +160,8 @@ module.exports = class Boot {
 
     const dependencies = ${JSON.stringify(dependencies, null, 2)}
     const builtinRequire = require
-
-    module.exports = run(dependencies['${this.main.module.filename}'])
+    const entry = '${this.main.module.filename}'
+    module.exports = run(dependencies[entry])
 
     ${run.toString()}
     `.trim()
@@ -178,6 +179,7 @@ module.exports = class Boot {
         return m.exports
       }
 
+      require.main = cache[entry] // eslint-disable-line no-undef
       require.cache = cache
       require.builtin = builtinRequire // eslint-disable-line no-undef
 
