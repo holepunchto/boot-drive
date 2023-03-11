@@ -18,6 +18,7 @@ module.exports = class Boot {
     this.dependencies = opts.dependencies || new Map()
 
     this.cwd = opts.cwd || '.'
+    this.prefix = opts.prefix || '.'
     this.prebuilds = new Map()
     this.linker = new ScriptLinker({
       readFile: async (name) => {
@@ -50,8 +51,7 @@ module.exports = class Boot {
       await fsp.mkdir(path.dirname(filename), { recursive: true })
       await atomicWriteFile(filename, buffer)
     }
-    const local = this.drive.constructor.name === 'Localdrive' && this.drive.root // duck-type check
-    this.prebuilds.set(dirname, local ? filename : './prebuilds/' + basename)
+    this.prebuilds.set(dirname, this.prefix + '/prebuilds/' + basename)
   }
 
   async warmup () {
@@ -115,7 +115,7 @@ module.exports = class Boot {
     }
   }
 
-  _bundleDeps (mod) {
+    _bundleDeps (mod) {
     const dependencies = {}
     const stack = [mod]
 
