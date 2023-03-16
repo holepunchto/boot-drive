@@ -68,7 +68,7 @@ Bundles and stringifies the dependencies and source code of the drive.
 
 `opts.cwd` doesn't apply for `stringify()`:\
 
-Native modules has to always be in `./prebuilds/` related to the source file unless modified by the `prebuildsPrefix` option,
+Native modules has to always be in `./prebuilds/` related to the source file unless modified by the `prebuildsPrefix` option.
 
 ## License
 MIT
