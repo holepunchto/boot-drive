@@ -1,19 +1,20 @@
 const builtinRequire = require.builtin || require
+let builtinModules = null
 
 function createBuiltins (additionalBuiltins) {
-  let builtinModules = null
+  let builtins = null
 
   return {
     has (req) {
-      if (builtinModules === null) builtinModules = getBuiltins(additionalBuiltins)
-      return getBuiltins(additionalBuiltins).includes(req)
+      if (builtins === null) builtins = getBuiltins(additionalBuiltins)
+      return builtins.includes(req)
     },
     get (req) {
       return builtinRequire(req)
     },
     keys () {
-      if (builtinModules === null) builtinModules = getBuiltins(additionalBuiltins)
-      return getBuiltins(additionalBuiltins)
+      if (builtins === null) builtins = getBuiltins(additionalBuiltins)
+      return builtins
     }
   }
 }
@@ -21,5 +22,11 @@ function createBuiltins (additionalBuiltins) {
 module.exports = { createBuiltins }
 
 function getBuiltins (additionalBuiltins) {
-  return (builtinRequire('module').builtinModules || []).concat(additionalBuiltins || [])
+  return getBuiltinModules().concat(additionalBuiltins || [])
+}
+
+function getBuiltinModules () {
+  if (builtinModules !== null) return builtinModules
+  builtinModules = builtinRequire('module').builtinModules || []
+  return builtinModules
 }
