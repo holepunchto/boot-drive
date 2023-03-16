@@ -188,6 +188,24 @@ test('additional builtins', async function (t) {
 
   const source = boot.stringify()
   t.is(eval(source), 64) // eslint-disable-line no-eval
+
+  {
+    const boot = new Boot(drive)
+    await boot.warmup()
+
+    try {
+      t.is(boot.start(), 64)
+    } catch (err) {
+      t.ok(isBootRequire(err, 'sodium-native'))
+    }
+
+    try {
+      const source = boot.stringify()
+      t.is(eval(source), 64) // eslint-disable-line no-eval
+    } catch (err) {
+      t.ok(isBootRequire(err, 'sodium-native'))
+    }
+  }
 })
 
 test('additional builtin is not installed', async function (t) {
@@ -408,4 +426,8 @@ function create (key) {
 
 function isNodeRequire (err) {
   return err.code === 'MODULE_NOT_FOUND' && err.message.startsWith('Cannot find module')
+}
+
+function isBootRequire (error, dependency) {
+  return error.code === undefined && error.message.startsWith('Could not resolve ' + dependency)
 }
