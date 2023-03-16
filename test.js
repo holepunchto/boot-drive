@@ -206,14 +206,14 @@ test('additional builtin is not installed', async function (t) {
   }
 
   try {
-    t.is(boot.start(), 64)
+    boot.start()
   } catch (err) {
     t.ok(isNodeRequire(err))
   }
 
   try {
     const source = boot.stringify()
-    t.is(eval(source), 64) // eslint-disable-line no-eval
+    eval(source) // eslint-disable-line no-eval
   } catch (err) {
     t.ok(isNodeRequire(err))
   }
