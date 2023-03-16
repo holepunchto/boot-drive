@@ -190,7 +190,7 @@ test('additional builtins', async function (t) {
   t.is(eval(source), 64) // eslint-disable-line no-eval
 })
 
-test('additional builtin not installed', async function (t) {
+test('additional builtin is not installed', async function (t) {
   const [drive] = create()
 
   await drive.put('/index.js', Buffer.from(`
