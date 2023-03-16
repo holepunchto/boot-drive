@@ -192,8 +192,6 @@ module.exports = class Boot {
       function require (req) {
         const r = mod.requires[req]
 
-        if (req === 'electron') return builtinRequire('electron')
-
         if (r.shouldNodeRequire) {
           return builtinRequire(r.output) // eslint-disable-line no-undef
         }
