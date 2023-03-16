@@ -1,6 +1,6 @@
 const builtinRequire = require.builtin || require
 
-function builtinsHooks (additionalBuiltins) {
+function createBuiltins (additionalBuiltins) {
   let builtinModules = null
 
   return {
@@ -18,7 +18,7 @@ function builtinsHooks (additionalBuiltins) {
   }
 }
 
-module.exports = { builtinsHooks }
+module.exports = { createBuiltins }
 
 function getBuiltins (additionalBuiltins) {
   return (builtinRequire('module').builtinModules || []).concat(additionalBuiltins || [])
