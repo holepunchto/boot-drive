@@ -1,5 +1,4 @@
 const builtinRequire = require.builtin || require
-let builtinModules = null
 
 function createBuiltins (additionalBuiltins) {
   let builtins = null
@@ -26,7 +25,5 @@ function getBuiltins (additionalBuiltins) {
 }
 
 function getBuiltinModules () {
-  if (builtinModules !== null) return builtinModules
-  builtinModules = builtinRequire('module').builtinModules || []
-  return builtinModules
+  return builtinRequire('module').builtinModules || []
 }
