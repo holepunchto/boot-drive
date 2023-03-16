@@ -142,12 +142,12 @@ test('require module with prebuilds', async function (t) {
   await Promise.all([m1.done(), m2.done(), m3.done()])
 
   const sodium = require('sodium-native')
-  sodium.$used = true
+  sodium.$used1 = true
 
   await drive.put('/index.js', Buffer.from(`
     const sodium = require("sodium-native")
     const b4a = require("b4a")
-    if (sodium.$used) throw new Error("sodium-native was already imported before")
+    if (sodium.$used1) throw new Error("sodium-native was already imported before")
     const buffer = b4a.allocUnsafe(32)
     sodium.randombytes_buf(buffer)
     module.exports = buffer.toString('hex').length
@@ -166,26 +166,75 @@ test('require module with prebuilds', async function (t) {
   await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
 })
 
-test.skip('add module', async function (t) {
+test('additional builtins', async function (t) {
   const [drive] = create()
 
   const sodium = require('sodium-native')
-  sodium.$used = true
+  sodium.$used2 = true
 
   await drive.put('/index.js', Buffer.from(`
     const sodium = require("sodium-native")
     const b4a = require("b4a")
-    if (!sodium.$used) throw new Error("sodium-native should have been imported before")
+    if (!sodium.$used2) throw new Error("sodium-native should have been imported before")
     const buffer = b4a.allocUnsafe(32)
     sodium.randombytes_buf(buffer)
     module.exports = buffer.toString('hex').length
   `))
 
-  const boot = new Boot(drive, { modules: ['sodium-native'] })
-  boot.modules.add('b4a')
+  const boot = new Boot(drive, { additionalBuiltins: ['sodium-native', 'b4a'] })
   await boot.warmup()
 
   t.is(boot.start(), 64)
+
+  const source = boot.stringify()
+  t.is(eval(source), 64) // eslint-disable-line no-eval
+
+  {
+    const boot = new Boot(drive)
+    await boot.warmup()
+
+    try {
+      t.is(boot.start(), 64)
+    } catch (err) {
+      t.ok(isBootRequire(err, 'sodium-native'))
+    }
+
+    try {
+      const source = boot.stringify()
+      t.is(eval(source), 64) // eslint-disable-line no-eval
+    } catch (err) {
+      t.ok(isBootRequire(err, 'sodium-native'))
+    }
+  }
+})
+
+test('additional builtin is not installed', async function (t) {
+  const [drive] = create()
+
+  await drive.put('/index.js', Buffer.from(`
+    const Random = require("random-library")
+  `))
+
+  const boot = new Boot(drive, { additionalBuiltins: ['random-library'] })
+
+  try {
+    await boot.warmup()
+  } catch (err) {
+    t.ok(isNodeRequire(err))
+  }
+
+  try {
+    boot.start()
+  } catch (err) {
+    t.ok(isNodeRequire(err))
+  }
+
+  try {
+    const source = boot.stringify()
+    eval(source) // eslint-disable-line no-eval
+  } catch (err) {
+    t.ok(isNodeRequire(err))
+  }
 })
 
 test('remote drive', async function (t) {
@@ -235,12 +284,12 @@ test('stringify with prebuilds', async function (t) {
   await Promise.all([m1.done(), m2.done(), m3.done()])
 
   const sodium = require('sodium-native')
-  sodium.$used = true
+  sodium.$used3 = true
 
   await drive.put('/index.js', Buffer.from(`
     const sodium = require("sodium-native")
     const b4a = require("b4a")
-    if (sodium.$used) throw new Error("sodium-native was already imported before")
+    if (sodium.$used3) throw new Error("sodium-native was already imported before")
     const buffer = b4a.allocUnsafe(32)
     sodium.randombytes_buf(buffer)
     module.exports = buffer.toString('hex').length
@@ -373,4 +422,12 @@ function create (key) {
   const corestore = new Corestore(RAM)
   const drive = new Hyperdrive(corestore, key)
   return [drive, corestore]
+}
+
+function isNodeRequire (err) {
+  return err.code === 'MODULE_NOT_FOUND' && err.message.startsWith('Cannot find module')
+}
+
+function isBootRequire (error, dependency) {
+  return error.code === undefined && error.message.startsWith('Could not resolve ' + dependency)
 }

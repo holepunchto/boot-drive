@@ -39,12 +39,14 @@ Available `options`:
   entrypoint: null,
   cwd: '.',
   cache: {},
-  dependencies: new Map()
+  dependencies: new Map(),
+  additionalBuiltins: []
 }
 ```
 
 `cwd` is the working directory for `prebuilds/` (default: `.`).\
-`dependencies` is used in `warmup()`, you can share linker deps between boots.
+`dependencies` is used in `warmup()`, you can share linker deps between boots.\
+`additionalBuiltins` is for adding modules to be imported by Node's native `require`.
 
 #### `await boot.warmup()`
 
