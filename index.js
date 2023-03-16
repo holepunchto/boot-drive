@@ -20,6 +20,7 @@ module.exports = class Boot {
     this.cwd = opts.cwd || '.'
     this.prebuildsPrefix = opts.prebuildsPrefix || '.'
     this.prebuilds = new Map()
+
     this.linker = new ScriptLinker({
       readFile: async (name) => {
         const buffer = await this.drive.get(name)
@@ -51,6 +52,7 @@ module.exports = class Boot {
       await fsp.mkdir(path.dirname(filename), { recursive: true })
       await atomicWriteFile(filename, buffer)
     }
+
     this.prebuilds.set(dirname, this.prebuildsPrefix + '/prebuilds/' + basename)
   }
 
