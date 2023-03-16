@@ -181,13 +181,33 @@ test('additional builtins', async function (t) {
     module.exports = buffer.toString('hex').length
   `))
 
-  const boot = new Boot(drive, { additionalBuiltins: ['sodium-native', 'b4a'] })
-  await boot.warmup()
+  {
+    const boot = new Boot(drive, { additionalBuiltins: ['sodium-native', 'b4a'] })
+    await boot.warmup()
 
-  t.is(boot.start(), 64)
+    t.is(boot.start(), 64)
 
-  const source = boot.stringify()
-  t.is(eval(source), 64) // eslint-disable-line no-eval
+    const source = boot.stringify()
+    t.is(eval(source), 64) // eslint-disable-line no-eval
+  }
+
+  {
+    const boot = new Boot(drive, { additionalBuiltins: ['b4a'] })
+    await boot.warmup()
+
+    try {
+      t.is(boot.start(), 64)
+    } catch (err) {
+      t.ok(err.message.startsWith('Could not resolve sodium-native'))
+    }
+
+    try {
+      const source = boot.stringify()
+      t.is(eval(source), 64) // eslint-disable-line no-eval
+    } catch (err) {
+      t.ok(err.message.startsWith('Could not resolve sodium-native'))
+    }
+  }
 })
 
 test('remote drive', async function (t) {

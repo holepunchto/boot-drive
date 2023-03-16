@@ -6,7 +6,7 @@ const ScriptLinker = require('script-linker')
 const sodium = require('sodium-native')
 const b4a = require('b4a')
 const unixResolve = require('unix-path-resolve')
-const { getBuiltins, builtinsHooks } = require('./defaults.js')
+const { builtinsHooks } = require('./defaults.js')
 
 module.exports = class Boot {
   constructor (drive, opts = {}) {
@@ -20,8 +20,7 @@ module.exports = class Boot {
     this.cwd = opts.cwd || '.'
     this.prebuilds = new Map()
 
-    this.builtinModules = getBuiltins().concat(opts.additionalBuiltins || [])
-    this.builtins = builtinsHooks(this.builtinModules)
+    this.builtins = builtinsHooks(opts.additionalBuiltins)
 
     this.linker = new ScriptLinker({
       readFile: async (name) => {

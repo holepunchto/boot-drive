@@ -1,24 +1,25 @@
 const builtinRequire = require.builtin || require
-let builtinModules = null
 
-function builtinsHooks (builtins) {
+function builtinsHooks (additionalBuiltins) {
+  let builtinModules = null
+
   return {
     has (req) {
-      return builtins.includes(req)
+      if (builtinModules === null) builtinModules = getBuiltins(additionalBuiltins)
+      return getBuiltins(additionalBuiltins).includes(req)
     },
     get (req) {
       return builtinRequire(req)
     },
     keys () {
-      return builtins
+      if (builtinModules === null) builtinModules = getBuiltins(additionalBuiltins)
+      return getBuiltins(additionalBuiltins)
     }
   }
 }
 
-module.exports = { builtinsHooks, getBuiltins }
+module.exports = { builtinsHooks }
 
-function getBuiltins () {
-  if (builtinModules !== null) return builtinModules
-  builtinModules = builtinRequire('module').builtinModules || []
-  return builtinModules
+function getBuiltins (additionalBuiltins) {
+  return (builtinRequire('module').builtinModules || []).concat(additionalBuiltins || [])
 }
