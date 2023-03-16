@@ -21,9 +21,6 @@ function createBuiltins (additionalBuiltins) {
 module.exports = { createBuiltins }
 
 function getBuiltins (additionalBuiltins) {
-  return getBuiltinModules().concat(additionalBuiltins || [])
-}
-
-function getBuiltinModules () {
-  return builtinRequire('module').builtinModules || []
+  const builtinModules = builtinRequire('module').builtinModules || []
+  return builtinModules.concat(additionalBuiltins || [])
 }
