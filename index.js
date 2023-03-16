@@ -18,7 +18,7 @@ module.exports = class Boot {
     this.dependencies = opts.dependencies || new Map()
 
     this.cwd = opts.cwd || '.'
-    this.prefix = opts.prefix || '.'
+    this.prebuildsPrefix = opts.prebuildsPrefix || '.'
     this.prebuilds = new Map()
     this.linker = new ScriptLinker({
       readFile: async (name) => {
@@ -51,7 +51,7 @@ module.exports = class Boot {
       await fsp.mkdir(path.dirname(filename), { recursive: true })
       await atomicWriteFile(filename, buffer)
     }
-    this.prebuilds.set(dirname, this.prefix + '/prebuilds/' + basename)
+    this.prebuilds.set(dirname, this.prebuildsPrefix + '/prebuilds/' + basename)
   }
 
   async warmup () {
