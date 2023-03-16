@@ -116,7 +116,7 @@ module.exports = class Boot {
     }
   }
 
-    _bundleDeps (mod) {
+  _bundleDeps (mod) {
     const dependencies = {}
     const stack = [mod]
 
