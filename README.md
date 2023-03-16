@@ -40,12 +40,14 @@ Available `options`:
   cwd: '.',
   cache: {},
   dependencies: new Map(),
+  prebuildsPrefix: '.',
   additionalBuiltins: []
 }
 ```
 
 `cwd` is the working directory for `prebuilds/` (default: `.`).\
 `dependencies` is used in `warmup()`, you can share linker deps between boots.\
+`prebuildsPrefix`: string to prepend to prebuild path lookups
 `additionalBuiltins` is for adding modules to be imported by Node's native `require`.
 
 #### `await boot.warmup()`
