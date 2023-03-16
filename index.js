@@ -6,7 +6,7 @@ const ScriptLinker = require('script-linker')
 const sodium = require('sodium-native')
 const b4a = require('b4a')
 const unixResolve = require('unix-path-resolve')
-const { builtins } = require('./defaults.js')
+const { getBuiltins, builtinsHooks } = require('./defaults.js')
 
 module.exports = class Boot {
   constructor (drive, opts = {}) {
@@ -20,13 +20,16 @@ module.exports = class Boot {
     this.cwd = opts.cwd || '.'
     this.prebuilds = new Map()
 
+    this.builtinModules = getBuiltins().concat(opts.additionalBuiltins || [])
+    this.builtins = builtinsHooks(this.builtinModules)
+
     this.linker = new ScriptLinker({
       readFile: async (name) => {
         const buffer = await this.drive.get(name)
         if (!buffer) throw new Error('ENOENT: ' + name)
         return buffer
       },
-      builtins
+      builtins: this.builtins
     })
   }
 
@@ -101,7 +104,7 @@ module.exports = class Boot {
       return m.exports
 
       function require (req) {
-        if (builtins.has(req)) {
+        if (self.builtins.has(req)) {
           return builtinRequire(req)
         }
 
@@ -131,7 +134,7 @@ module.exports = class Boot {
       }
 
       for (const r of mod.resolutions) {
-        const isModule = builtins.has(r.input)
+        const isModule = this.builtins.has(r.input)
 
         if (isModule || !r.output) {
           dep.requires[r.input] = { output: r.output, shouldNodeRequire: isModule }

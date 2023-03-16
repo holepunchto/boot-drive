@@ -142,12 +142,12 @@ test('require module with prebuilds', async function (t) {
   await Promise.all([m1.done(), m2.done(), m3.done()])
 
   const sodium = require('sodium-native')
-  sodium.$used = true
+  sodium.$used1 = true
 
   await drive.put('/index.js', Buffer.from(`
     const sodium = require("sodium-native")
     const b4a = require("b4a")
-    if (sodium.$used) throw new Error("sodium-native was already imported before")
+    if (sodium.$used1) throw new Error("sodium-native was already imported before")
     const buffer = b4a.allocUnsafe(32)
     sodium.randombytes_buf(buffer)
     module.exports = buffer.toString('hex').length
@@ -166,26 +166,28 @@ test('require module with prebuilds', async function (t) {
   await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
 })
 
-test.skip('add module', async function (t) {
+test('additional builtins', async function (t) {
   const [drive] = create()
 
   const sodium = require('sodium-native')
-  sodium.$used = true
+  sodium.$used2 = true
 
   await drive.put('/index.js', Buffer.from(`
     const sodium = require("sodium-native")
     const b4a = require("b4a")
-    if (!sodium.$used) throw new Error("sodium-native should have been imported before")
+    if (!sodium.$used2) throw new Error("sodium-native should have been imported before")
     const buffer = b4a.allocUnsafe(32)
     sodium.randombytes_buf(buffer)
     module.exports = buffer.toString('hex').length
   `))
 
-  const boot = new Boot(drive, { modules: ['sodium-native'] })
-  boot.modules.add('b4a')
+  const boot = new Boot(drive, { additionalBuiltins: ['sodium-native', 'b4a'] })
   await boot.warmup()
 
   t.is(boot.start(), 64)
+
+  const source = boot.stringify()
+  t.is(eval(source), 64) // eslint-disable-line no-eval
 })
 
 test('remote drive', async function (t) {
@@ -235,12 +237,12 @@ test('stringify with prebuilds', async function (t) {
   await Promise.all([m1.done(), m2.done(), m3.done()])
 
   const sodium = require('sodium-native')
-  sodium.$used = true
+  sodium.$used3 = true
 
   await drive.put('/index.js', Buffer.from(`
     const sodium = require("sodium-native")
     const b4a = require("b4a")
-    if (sodium.$used) throw new Error("sodium-native was already imported before")
+    if (sodium.$used3) throw new Error("sodium-native was already imported before")
     const buffer = b4a.allocUnsafe(32)
     sodium.randombytes_buf(buffer)
     module.exports = buffer.toString('hex').length

@@ -1,19 +1,21 @@
 const builtinRequire = require.builtin || require
-
 let builtinModules = null
-const builtins = {
-  has (req) {
-    return getBuiltins().includes(req)
-  },
-  get (req) {
-    return builtinRequire(req)
-  },
-  keys () {
-    return getBuiltins()
+
+function builtinsHooks (builtins) {
+  return {
+    has (req) {
+      return builtins.includes(req)
+    },
+    get (req) {
+      return builtinRequire(req)
+    },
+    keys () {
+      return builtins
+    }
   }
 }
 
-module.exports = { builtins }
+module.exports = { builtinsHooks, getBuiltins }
 
 function getBuiltins () {
   if (builtinModules !== null) return builtinModules
