@@ -18,7 +18,8 @@ module.exports = class Boot {
     this.dependencies = opts.dependencies || new Map()
 
     this.cwd = opts.cwd || '.'
-    this.prebuildsPrefix = opts.prebuildsPrefix || '.'
+
+    this.absolutePrebuilds = opts.absolutePrebuilds || false
     this.prebuilds = new Map()
 
     this.linker = new ScriptLinker({
@@ -53,7 +54,8 @@ module.exports = class Boot {
       await atomicWriteFile(filename, buffer)
     }
 
-    this.prebuilds.set(dirname, this.prebuildsPrefix + '/prebuilds/' + basename)
+    const prebuildPath = this.absolutePrebuilds ? path.resolve(this.cwd, 'prebuilds', basename) : './prebuilds/' + basename
+    this.prebuilds.set(dirname, prebuildPath)
   }
 
   async warmup () {
