@@ -48,7 +48,7 @@ Available `options`:
 `cwd` is the working directory for `prebuilds/` (default: `.`).\
 `dependencies` is used in `warmup()`, you can share linker deps between boots.\
 `absolutePrebuilds`: string to prepend to prebuild paths (`absolutePrebuilds` will be compiled into stringified output).\
-`additionalBuiltins` is for adding modules to be imported by Node's native `require`.
+`additionalBuiltins` is for adding modules to be imported by Node's native `require`.\
 
 #### `await boot.warmup()`
 
