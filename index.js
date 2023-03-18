@@ -79,7 +79,7 @@ module.exports = class Boot {
     return this._run(this._run, dependencies, dependencies[this.main.module.filename], this.cache, this._createRequire, builtinRequire)
   }
 
-  _bundleDeps (mod, useCwd) {
+  _bundleDeps (mod, absolutePrebuilds) {
     const dependencies = {}
     const stack = [mod]
 
@@ -103,7 +103,7 @@ module.exports = class Boot {
 
         if (r.input === 'node-gyp-build') {
           let output = this.prebuilds.get(mod.dirname)
-          if (useCwd) output = path.resolve(this.cwd, output)
+          if (absolutePrebuilds) output = path.resolve(this.cwd, output)
           dep.requires[r.input] = { output }
           continue
         }
