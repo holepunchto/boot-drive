@@ -130,6 +130,9 @@ test('require file within drive', async function (t) {
   await boot.warmup()
 
   t.is(boot.start(), 'hello func: 4')
+
+  const source = boot.stringify()
+  t.is(eval(source), 'hello func: 4') // eslint-disable-line no-eval
 })
 
 test('require module with prebuilds', async function (t) {

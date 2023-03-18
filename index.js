@@ -73,50 +73,13 @@ module.exports = class Boot {
   }
 
   start () {
-    const self = this
+    const dependencies = this._bundleDeps(this.main.module, true)
     const builtinRequire = require.builtin || require
-    const { cache } = this
 
-    return run(this.main.module)
-
-    function run (mod) {
-      if (cache[mod.filename]) return cache[mod.filename].exports
-
-      const m = cache[mod.filename] = {
-        exports: {}
-      }
-
-      if (mod.type === 'json') {
-        m.exports = JSON.parse(mod.source)
-        return m.exports
-      }
-
-      require.cache = cache
-      require.builtin = builtinRequire
-
-      const source = mod.source + '\n//# sourceURL=' + mod.filename
-      const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', '__src', 'eval(__src)') // eslint-disable-line no-new-func
-      wrap(require, mod.dirname, mod.filename, m, m.exports, source)
-
-      return m.exports
-
-      function require (req) {
-        if (self.linker.builtins.has(req)) {
-          return builtinRequire(req)
-        }
-
-        const output = resolve(mod, req)
-        if (!output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
-
-        if (req === 'node-gyp-build') return (dirname) => builtinRequire(path.resolve(self.cwd, self.prebuilds.get(unixResolve(dirname))))
-
-        const dep = self.dependencies.get(output)
-        return run(dep)
-      }
-    }
+    return this._run(this._run, dependencies, dependencies[this.main.module.filename], this.cache, this._createRequire, builtinRequire)
   }
 
-  _bundleDeps (mod) {
+  _bundleDeps (mod, useCwd) {
     const dependencies = {}
     const stack = [mod]
 
@@ -131,15 +94,17 @@ module.exports = class Boot {
       }
 
       for (const r of mod.resolutions) {
-        const isModule = this.linker.builtins.has(r.input)
+        const isBuiltin = this.linker.builtins.has(r.input)
 
-        if (isModule || !r.output) {
-          dep.requires[r.input] = { output: r.output, shouldNodeRequire: isModule }
+        if (isBuiltin || !r.output) {
+          dep.requires[r.input] = { output: r.output, isBuiltin }
           continue
         }
 
         if (r.input === 'node-gyp-build') {
-          dep.requires[r.input] = { output: this.prebuilds.get(mod.dirname) }
+          let output = this.prebuilds.get(mod.dirname)
+          if (useCwd) output = path.resolve(this.cwd, output)
+          dep.requires[r.input] = { output }
           continue
         }
 
@@ -153,7 +118,7 @@ module.exports = class Boot {
   }
 
   stringify () {
-    const dependencies = this._bundleDeps(this.main.module)
+    const dependencies = this._bundleDeps(this.main.module, false)
 
     return `
     'use strict'
@@ -161,47 +126,56 @@ module.exports = class Boot {
     const dependencies = ${JSON.stringify(dependencies, null, 2)}
     const builtinRequire = require
 
-    run(dependencies['${this.main.module.filename}'])
+    _run(_run, dependencies, dependencies['${this.main.module.filename}'], {}, _createRequire, builtinRequire)
 
-    ${run.toString()}
+    function ${this._run.toString()}
+
+    function ${this._createRequire.toString()}
     `.trim()
+  }
 
-    // on purpose very similar to run() of start() to try re-use it
-    function run (mod, cache = {}) {
-      if (cache[mod.filename]) return cache[mod.filename].exports
+  _run (run, dependencies, mod, cache = {}, createRequire, builtinRequire) {
+    if (cache[mod.filename]) return cache[mod.filename].exports
 
-      const m = cache[mod.filename] = {
-        exports: {}
-      }
+    const m = cache[mod.filename] = {
+      exports: {}
+    }
 
-      if (mod.type === 'json') {
-        m.exports = JSON.parse(mod.source)
-        return m.exports
-      }
-
-      require.cache = cache
-      require.builtin = builtinRequire // eslint-disable-line no-undef
-
-      const source = mod.source + '\n//# sourceURL=' + mod.filename
-      const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', '__src', 'eval(__src)') // eslint-disable-line no-new-func
-      wrap(require, mod.dirname, mod.filename, m, m.exports, source)
-
+    if (mod.type === 'json') {
+      m.exports = JSON.parse(mod.source)
       return m.exports
+    }
 
-      function require (req) {
-        const r = mod.requires[req]
+    const require = createRequire(mod, dependencies, { run, createRequire, builtinRequire, cache })
+    require.cache = cache
+    require.builtin = builtinRequire
 
-        if (r.shouldNodeRequire) {
-          return builtinRequire(r.output) // eslint-disable-line no-undef
-        }
+    const source = mod.source + '\n//# sourceURL=' + mod.filename
+    const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', '__src', 'eval(__src)') // eslint-disable-line no-new-func
+    wrap(require, mod.dirname, mod.filename, m, m.exports, source)
 
-        if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
+    return m.exports
+  }
 
-        if (req === 'node-gyp-build') return () => builtinRequire(r.output) // eslint-disable-line no-undef
+  _createRequire (mod, dependencies, { run, createRequire, builtinRequire, cache }) {
+    return function (req) {
+      const r = mod.requires[req]
 
-        const dep = dependencies[r.output]
-        return run(dep, cache)
+      if (r.isBuiltin) {
+        return builtinRequire(r.output)
       }
+
+      if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
+
+      // + confirm that they're the equivalent
+      // + start():
+      // if (req === 'node-gyp-build') return (dirname) => builtinRequire(path.resolve(self.cwd, self.prebuilds.get(unixResolve(dirname))))
+
+      // + stringify():
+      if (req === 'node-gyp-build') return () => builtinRequire(r.output)
+
+      const dep = dependencies[r.output]
+      return run(run, dependencies, dep, cache, createRequire, builtinRequire)
     }
   }
 }
