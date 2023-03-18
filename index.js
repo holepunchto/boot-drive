@@ -167,6 +167,11 @@ module.exports = class Boot {
 
       if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
 
+      // + confirm that they're the equivalent
+      // + start():
+      // if (req === 'node-gyp-build') return (dirname) => builtinRequire(path.resolve(self.cwd, self.prebuilds.get(unixResolve(dirname))))
+
+      // + stringify():
       if (req === 'node-gyp-build') return () => builtinRequire(r.output)
 
       const dep = dependencies[r.output]
