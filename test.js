@@ -9,8 +9,10 @@ const Localdrive = require('localdrive')
 const MirrorDrive = require('mirror-drive')
 const Hyperswarm = require('hyperswarm')
 const createTestnet = require('@hyperswarm/testnet')
+const fs = require('fs')
 const fsp = require('fs/promises')
 const path = require('path')
+const os = require('os')
 
 test('basic', async function (t) {
   const [drive] = create()
@@ -185,34 +187,23 @@ test('absolute prebuilds path for stringify', async function (t) {
   `))
 
   {
-    try {
-      await fsp.rm('./working-dir-1', { recursive: true })
-    } catch {}
-
-    const boot = new Boot(drive, { cwd: './working-dir-1', absolutePrebuilds: false })
+    const boot = new Boot(drive, { cwd: createTmpDir(t), absolutePrebuilds: false })
     await boot.warmup()
 
     try {
-      eval(boot.stringify()) // eslint-disable-line no-eval
+      t.is(eval(boot.stringify()), 64) // eslint-disable-line no-eval
       t.fail('should have failed')
     } catch (err) {
+      console.log(err)
       t.ok(isNodeRequire(err))
     }
-
-    await fsp.rm('./working-dir-1', { recursive: true })
   }
 
   {
-    try {
-      await fsp.rm('./working-dir-2', { recursive: true })
-    } catch {}
-
-    const boot = new Boot(drive, { cwd: './working-dir-2', absolutePrebuilds: true })
+    const boot = new Boot(drive, { cwd: createTmpDir(t), absolutePrebuilds: true })
     await boot.warmup()
 
     t.is(eval(boot.stringify()), 64) // eslint-disable-line no-eval
-
-    await fsp.rm('./working-dir-2', { recursive: true })
   }
 })
 
@@ -480,4 +471,20 @@ function isNodeRequire (err) {
 
 function isBootRequire (error, dependency) {
   return error.code === undefined && error.message.startsWith('Could not resolve ' + dependency)
+}
+
+function createTmpDir (t) {
+  const tmpdir = path.join(os.tmpdir(), 'localdrive-test-')
+  const dir = fs.mkdtempSync(tmpdir)
+  t.teardown(() => rmdir(dir))
+  return dir
+}
+
+async function rmdir (dir) {
+  try {
+    await fsp.rm(dir, { recursive: true })
+  } catch (error) {
+    if (error.code === 'ENOENT') return
+    throw error
+  }
 }
