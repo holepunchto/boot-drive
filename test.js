@@ -236,14 +236,15 @@ test('additional builtins', async function (t) {
     await boot.warmup()
 
     try {
-      t.is(boot.start(), 64)
+      boot.start()
+      t.fail('should have failed')
     } catch (err) {
       t.ok(isBootRequire(err, 'sodium-native'))
     }
 
     try {
-      const source = boot.stringify()
-      t.is(eval(source), 64) // eslint-disable-line no-eval
+      eval(boot.stringify()) // eslint-disable-line no-eval
+      t.fail('should have failed')
     } catch (err) {
       t.ok(isBootRequire(err, 'sodium-native'))
     }
