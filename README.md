@@ -46,7 +46,7 @@ Available `options`:
 ```
 
 `cwd` is the working directory for `prebuilds/` (default: `.`).\
-`absolutePrebuilds` will make use of `cwd` for prebuilds path on the stringified output.\
+`absolutePrebuilds` will make use of `cwd` for the prebuilds path, included on the stringified output.\
 `dependencies` is used in `warmup()`, you can share linker deps between boots.\
 `additionalBuiltins` is for adding modules to be imported by Node's native `require`.
 
@@ -66,7 +66,6 @@ Runs the drive.
 
 Bundles and stringifies the dependencies and source code of the drive.
 
-`cwd` option doesn't apply for `stringify()`, unless indicated by the `absolutePrebuilds` option.\
 Without `absolutePrebuilds` native modules has to always be in `./prebuilds/` related to the source file.
 
 ## License
