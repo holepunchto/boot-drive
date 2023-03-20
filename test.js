@@ -191,10 +191,9 @@ test('absolute prebuilds path for stringify', async function (t) {
     await boot.warmup()
 
     try {
-      t.is(eval(boot.stringify()), 64) // eslint-disable-line no-eval
+      eval(boot.stringify()) // eslint-disable-line no-eval
       t.fail('should have failed')
     } catch (err) {
-      console.log(err)
       t.ok(isNodeRequire(err))
     }
   }
