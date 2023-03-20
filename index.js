@@ -125,7 +125,7 @@ module.exports = class Boot {
     'use strict'
 
     const dependencies = ${JSON.stringify(dependencies, null, 2)}
-    const builtinRequire = require
+    const builtinRequire = require.builtin || require
 
     _run(_run, dependencies, dependencies['${this.main.module.filename}'], {}, _createRequire, builtinRequire)
 
