@@ -46,7 +46,7 @@ Available `options`:
 ```
 
 `cwd` is the working directory for `prebuilds/` (default: `.`).\
-`absolutePrebuilds` will make use of `cwd` for prebuilds path of the stringified output.\
+`absolutePrebuilds` will make use of `cwd` for prebuilds path on the stringified output.\
 `dependencies` is used in `warmup()`, you can share linker deps between boots.\
 `additionalBuiltins` is for adding modules to be imported by Node's native `require`.
 
