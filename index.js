@@ -53,7 +53,7 @@ module.exports = class Boot {
       await atomicWriteFile(filename, buffer)
     }
 
-    this.prebuilds.set(dirname, './prebuilds/' + basename)
+    this.prebuilds.set(dirname, this.absolutePrebuilds ? filename : './prebuilds/' + basename)
   }
 
   async warmup () {
@@ -102,12 +102,13 @@ module.exports = class Boot {
           continue
         }
 
-        if (r.input === 'node-gyp-build') {
-          let output = this.prebuilds.get(mod.dirname)
-          if (absolutePrebuilds) output = path.resolve(this.cwd, output)
-          dep.requires[r.input] = { output }
-          continue
-        }
+        // if (r.input === 'node-gyp-build') {
+        //   // console.log('node-gyp-build here', mod.dirname, this.cwd)
+        //   let output = this.prebuilds.get(mod.dirname)
+        //   if (absolutePrebuilds) output = path.resolve(this.cwd, output)
+        //   dep.requires[r.input] = { output }
+        //   continue
+        // }
 
         dep.requires[r.input] = { output: r.output }
 
@@ -124,6 +125,7 @@ module.exports = class Boot {
     return `
     'use strict'
 
+    const prebuilds = new Map(${JSON.stringify([...this.prebuilds])})
     const dependencies = ${JSON.stringify(dependencies, null, 2)}
     const builtinRequire = require.builtin || require
 
@@ -159,6 +161,7 @@ module.exports = class Boot {
   }
 
   _createRequire (mod, dependencies, { run, createRequire, builtinRequire, cache }) {
+    const self = this
     return function (req) {
       const r = mod.requires[req]
 
@@ -173,7 +176,9 @@ module.exports = class Boot {
       // if (req === 'node-gyp-build') return (dirname) => builtinRequire(path.resolve(self.cwd, self.prebuilds.get(unixResolve(dirname))))
 
       // + stringify():
-      if (req === 'node-gyp-build') return () => builtinRequire(r.output)
+      if (req === 'node-gyp-build') {
+        return (dirname) => builtinRequire(prebuilds.get(dirname))
+      }
 
       const dep = dependencies[r.output]
       return run(run, dependencies, dep, cache, createRequire, builtinRequire)
