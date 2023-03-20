@@ -262,19 +262,21 @@ test('additional builtin is not installed', async function (t) {
 
   try {
     await boot.warmup()
+    t.fail('should have failed')
   } catch (err) {
     t.ok(isNodeRequire(err))
   }
 
   try {
     boot.start()
+    t.fail('should have failed')
   } catch (err) {
     t.ok(isNodeRequire(err))
   }
 
   try {
-    const source = boot.stringify()
-    eval(source) // eslint-disable-line no-eval
+    eval(boot.stringify()) // eslint-disable-line no-eval
+    t.fail('should have failed')
   } catch (err) {
     t.ok(isNodeRequire(err))
   }
