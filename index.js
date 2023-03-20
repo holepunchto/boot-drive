@@ -19,7 +19,7 @@ module.exports = class Boot {
 
     this.cwd = opts.cwd || '.'
     this.absolutePrebuilds = opts.absolutePrebuilds || false
-    this.prebuilds = new Map()
+    this.prebuilds = {}
 
     this.linker = new ScriptLinker({
       readFile: async (name) => {
@@ -53,7 +53,7 @@ module.exports = class Boot {
       await atomicWriteFile(filename, buffer)
     }
 
-    this.prebuilds.set(dirname, this.absolutePrebuilds ? filename : './prebuilds/' + basename)
+    this.prebuilds[dirname] = this.absolutePrebuilds ? filename : './prebuilds/' + basename
   }
 
   async warmup () {
@@ -74,13 +74,13 @@ module.exports = class Boot {
   }
 
   start () {
-    const dependencies = this._bundleDeps(this.main.module, true)
+    const dependencies = this._bundleDeps(this.main.module)
     const builtinRequire = require.builtin || require
 
-    return this._run(this._run, dependencies, dependencies[this.main.module.filename], this.cache, this._createRequire, builtinRequire)
+    return this._run(this._run, dependencies, this.prebuilds, dependencies[this.main.module.filename], this.cache, this._createRequire, builtinRequire)
   }
 
-  _bundleDeps (mod, absolutePrebuilds) {
+  _bundleDeps (mod) {
     const dependencies = {}
     const stack = [mod]
 
@@ -95,20 +95,14 @@ module.exports = class Boot {
       }
 
       for (const r of mod.resolutions) {
+        if (r.input === 'node-gyp-build') continue
+
         const isBuiltin = this.linker.builtins.has(r.input)
 
         if (isBuiltin || !r.output) {
           dep.requires[r.input] = { output: r.output, isBuiltin }
           continue
         }
-
-        // if (r.input === 'node-gyp-build') {
-        //   // console.log('node-gyp-build here', mod.dirname, this.cwd)
-        //   let output = this.prebuilds.get(mod.dirname)
-        //   if (absolutePrebuilds) output = path.resolve(this.cwd, output)
-        //   dep.requires[r.input] = { output }
-        //   continue
-        // }
 
         dep.requires[r.input] = { output: r.output }
 
@@ -120,16 +114,16 @@ module.exports = class Boot {
   }
 
   stringify () {
-    const dependencies = this._bundleDeps(this.main.module, this.absolutePrebuilds)
+    const dependencies = this._bundleDeps(this.main.module)
 
     return `
     'use strict'
 
-    const prebuilds = new Map(${JSON.stringify([...this.prebuilds])})
+    const prebuilds = ${JSON.stringify(this.prebuilds, null, 2)}
     const dependencies = ${JSON.stringify(dependencies, null, 2)}
     const builtinRequire = require.builtin || require
 
-    _run(_run, dependencies, dependencies['${this.main.module.filename}'], {}, _createRequire, builtinRequire)
+    _run(_run, dependencies, prebuilds, dependencies['${this.main.module.filename}'], {}, _createRequire, builtinRequire)
 
     function ${this._run.toString()}
 
@@ -137,7 +131,7 @@ module.exports = class Boot {
     `.trim()
   }
 
-  _run (run, dependencies, mod, cache, createRequire, builtinRequire) {
+  _run (run, dependencies, prebuilds, mod, cache, createRequire, builtinRequire) {
     if (cache[mod.filename]) return cache[mod.filename].exports
 
     const m = cache[mod.filename] = {
@@ -149,7 +143,7 @@ module.exports = class Boot {
       return m.exports
     }
 
-    const require = createRequire(mod, dependencies, { run, createRequire, builtinRequire, cache })
+    const require = createRequire(mod, dependencies, prebuilds, { run, createRequire, builtinRequire, cache })
     require.cache = cache
     require.builtin = builtinRequire
 
@@ -160,9 +154,12 @@ module.exports = class Boot {
     return m.exports
   }
 
-  _createRequire (mod, dependencies, { run, createRequire, builtinRequire, cache }) {
-    const self = this
+  _createRequire (mod, dependencies, prebuilds, { run, createRequire, builtinRequire, cache }) {
     return function (req) {
+      if (req === 'node-gyp-build') {
+        return (dirname) => builtinRequire(prebuilds[dirname])
+      }
+
       const r = mod.requires[req]
 
       if (r.isBuiltin) {
@@ -171,17 +168,8 @@ module.exports = class Boot {
 
       if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
 
-      // + confirm that they're the equivalent
-      // + start():
-      // if (req === 'node-gyp-build') return (dirname) => builtinRequire(path.resolve(self.cwd, self.prebuilds.get(unixResolve(dirname))))
-
-      // + stringify():
-      if (req === 'node-gyp-build') {
-        return (dirname) => builtinRequire(prebuilds.get(dirname))
-      }
-
       const dep = dependencies[r.output]
-      return run(run, dependencies, dep, cache, createRequire, builtinRequire)
+      return run(run, dependencies, prebuilds, dep, cache, createRequire, builtinRequire)
     }
   }
 }
