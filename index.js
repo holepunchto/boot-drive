@@ -18,6 +18,7 @@ module.exports = class Boot {
     this.dependencies = opts.dependencies || new Map()
 
     this.cwd = opts.cwd || '.'
+    this.absolutePrebuilds = opts.absolutePrebuilds || false
     this.prebuilds = new Map()
 
     this.linker = new ScriptLinker({
@@ -118,7 +119,7 @@ module.exports = class Boot {
   }
 
   stringify () {
-    const dependencies = this._bundleDeps(this.main.module, false)
+    const dependencies = this._bundleDeps(this.main.module, this.absolutePrebuilds)
 
     return `
     'use strict'

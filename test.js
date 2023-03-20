@@ -166,6 +166,56 @@ test('require module with prebuilds', async function (t) {
   await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
 })
 
+test('absolute prebuilds path for stringify', async function (t) {
+  const [drive] = create()
+
+  const src = new Localdrive(__dirname)
+  await src.mirror(drive, { prefix: 'node_modules/sodium-native' }).done()
+  await src.mirror(drive, { prefix: 'node_modules/node-gyp-build' }).done()
+  await src.mirror(drive, { prefix: 'node_modules/b4a' }).done()
+
+  await drive.put('/index.js', Buffer.from(`
+    const sodium = require("sodium-native")
+    const b4a = require("b4a")
+
+    const buffer = b4a.allocUnsafe(32)
+    sodium.randombytes_buf(buffer)
+
+    module.exports = buffer.toString('hex').length
+  `))
+
+  {
+    try {
+      await fsp.rm('./working-dir-1', { recursive: true })
+    } catch {}
+
+    const boot = new Boot(drive, { cwd: './working-dir-1', absolutePrebuilds: false })
+    await boot.warmup()
+
+    try {
+      eval(boot.stringify()) // eslint-disable-line no-eval
+      t.fail('should have failed')
+    } catch (err) {
+      t.ok(isNodeRequire(err))
+    }
+
+    await fsp.rm('./working-dir-1', { recursive: true })
+  }
+
+  {
+    try {
+      await fsp.rm('./working-dir-2', { recursive: true })
+    } catch {}
+
+    const boot = new Boot(drive, { cwd: './working-dir-2', absolutePrebuilds: true })
+    await boot.warmup()
+
+    t.is(eval(boot.stringify()), 64) // eslint-disable-line no-eval
+
+    await fsp.rm('./working-dir-2', { recursive: true })
+  }
+})
+
 test('additional builtins', async function (t) {
   const [drive] = create()
 
