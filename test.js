@@ -155,17 +155,19 @@ test('require module with prebuilds', async function (t) {
     module.exports = buffer.toString('hex').length
   `))
 
-  const boot = new Boot(drive)
+  const boot = new Boot(drive, { cwd: createTmpDir(t), absolutePrebuilds: true })
+
+  /* const boot = new Boot(drive)
 
   try {
     await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
-  } catch {}
+  } catch {} */
 
   await boot.warmup()
 
   t.is(boot.start(), 64)
 
-  await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
+  // await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
 })
 
 test('absolute prebuilds path for stringify', async function (t) {
