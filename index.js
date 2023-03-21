@@ -75,7 +75,7 @@ module.exports = class Boot {
 
   start () {
     const dependencies = this._bundleDeps(this.main.module)
-    const builtinRequire = require.builtin || require
+    const builtinRequire = require.builtinRequire || require
     const entrypoint = this.main.module.filename
 
     return this._run(this._run, dependencies, this.prebuilds, entrypoint, dependencies[entrypoint], this.cache, this._createRequire, builtinRequire)
@@ -123,7 +123,7 @@ module.exports = class Boot {
     const prebuilds = ${JSON.stringify(this.prebuilds, null, 2)}
     const dependencies = ${JSON.stringify(dependencies, null, 2)}
     const entrypoint = ${JSON.stringify(this.main.module.filename)}
-    const builtinRequire = require.builtin || require
+    const builtinRequire = require.builtinRequire || require
 
     _run(_run, dependencies, prebuilds, entrypoint, dependencies[entrypoint], {}, _createRequire, builtinRequire)
 
@@ -150,7 +150,7 @@ module.exports = class Boot {
     const require = createRequire(mod, dependencies, prebuilds, { run, entrypoint, createRequire, builtinRequire, cache })
     require.main = cache[entrypoint]
     require.cache = cache
-    require.builtin = builtinRequire
+    require.builtinRequire = builtinRequire
 
     const source = mod.source + '\n//# sourceURL=' + mod.filename
     const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', '__src', 'eval(__src)') // eslint-disable-line no-new-func
