@@ -23,6 +23,8 @@ test('basic', async function (t) {
   await boot.warmup()
 
   t.is(boot.start(), 'hello')
+
+  t.is(eval(boot.stringify()), 'hello') // eslint-disable-line no-eval
 })
 
 test('entrypoint', async function (t) {
@@ -132,6 +134,8 @@ test('require file within drive', async function (t) {
   await boot.warmup()
 
   t.is(boot.start(), 'hello func: 4')
+
+  t.is(eval(boot.stringify()), 'hello func: 4') // eslint-disable-line no-eval
 })
 
 test('require module with prebuilds', async function (t) {
