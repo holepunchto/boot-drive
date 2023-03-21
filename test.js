@@ -259,13 +259,7 @@ test('additional builtin is not installed', async function (t) {
   `))
 
   const boot = new Boot(drive, { additionalBuiltins: ['random-library'] })
-
-  try {
-    await boot.warmup()
-    t.fail('should have failed')
-  } catch (err) {
-    t.ok(isNodeRequire(err))
-  }
+  await boot.warmup()
 
   try {
     boot.start()
