@@ -350,6 +350,26 @@ test('require json file', async function (t) {
   t.alike(eval(source), { assert: true }) // eslint-disable-line no-eval
 })
 
+test('require main property', async function (t) {
+  const [drive] = create()
+
+  await drive.put('/index.js', Buffer.from('module.exports = require.main'))
+
+  const boot = new Boot(drive)
+  await boot.warmup()
+
+  const main = {
+    path: '/',
+    filename: '/index.js',
+    exports: {}
+  }
+  main.exports = main
+
+  t.alike(boot.start(), main)
+
+  t.alike(eval(boot.stringify()), main) // eslint-disable-line no-eval
+})
+
 test('cache (shallow)', async function (t) {
   const [drive] = create()
 
@@ -385,7 +405,10 @@ test('cache (internal)', async function (t) {
 
   t.alike(cache, {})
   t.is(boot.start(), true)
-  t.alike(cache, { '/index.js': { exports: true }, '/data.json': { exports: { leet: 1337 } } })
+  t.alike(cache, {
+    '/index.js': { path: '/', filename: '/index.js', exports: true },
+    '/data.json': { path: '/', filename: '/data.json', exports: { leet: 1337 } }
+  })
 
   // stringify() does not expose a cache to check against
   const source = boot.stringify()
