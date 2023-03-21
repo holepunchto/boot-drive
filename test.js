@@ -340,18 +340,18 @@ test('stringify with prebuilds', async function (t) {
     module.exports = buffer.toString('hex').length
   `))
 
-  const boot = new Boot(drive)
+  const boot = new Boot(drive, { cwd: createTmpDir(t), absolutePrebuilds: true })
 
-  try {
+  /* try {
     await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
-  } catch {}
+  } catch {} */
 
   await boot.warmup()
 
   const source = boot.stringify()
   t.is(eval(source), 64) // eslint-disable-line no-eval
 
-  await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
+  // await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
 })
 
 test('require json file', async function (t) {
