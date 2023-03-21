@@ -418,7 +418,7 @@ test('cache (internal)', async function (t) {
   await drive.put('/index.js', Buffer.from(`
     const data1 = require("./data.json")
     const data2 = require("./data.json")
-    module.exports = data1 === data2
+    module.exports = require.cache
   `))
   await drive.put('/data.json', Buffer.from('{ "leet": 1337 }'))
 
@@ -429,8 +429,6 @@ test('cache (internal)', async function (t) {
 
   t.alike(cache, {})
 
-  t.is(boot.start(), true)
-
   const expected = {
     '/index.js': {
       filename: '/index.js',
@@ -440,9 +438,9 @@ test('cache (internal)', async function (t) {
       source: '\n' +
         '    const data1 = require("./data.json")\n' +
         '    const data2 = require("./data.json")\n' +
-        '    module.exports = data1 === data2\n' +
+        '    module.exports = require.cache\n' +
         '  ',
-      exports: true
+      exports: {} // Circular reference
     },
     '/data.json': {
       filename: '/data.json',
@@ -454,11 +452,13 @@ test('cache (internal)', async function (t) {
     }
   }
 
+  expected['/index.js'].exports = expected // Circular reference
+
+  t.alike(boot.start(), expected)
+
   t.alike(cache, expected)
 
-  // stringify() does not expose a cache to check against
-  const source = boot.stringify()
-  t.is(eval(source), true) // eslint-disable-line no-eval
+  t.alike(eval(boot.stringify()), expected) // eslint-disable-line no-eval
 })
 
 test('error stack', async function (t) {
