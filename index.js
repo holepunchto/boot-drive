@@ -18,7 +18,8 @@ module.exports = class Boot {
     this.dependencies = opts.dependencies || new Map()
 
     this.cwd = opts.cwd || '.'
-    this.prebuilds = new Map()
+    this.absolutePrebuilds = opts.absolutePrebuilds || false
+    this.prebuilds = {}
 
     this.linker = new ScriptLinker({
       readFile: async (name) => {
@@ -52,7 +53,7 @@ module.exports = class Boot {
       await atomicWriteFile(filename, buffer)
     }
 
-    this.prebuilds.set(dirname, './prebuilds/' + basename)
+    this.prebuilds[dirname] = this.absolutePrebuilds ? filename : './prebuilds/' + basename
   }
 
   async warmup () {
@@ -73,47 +74,10 @@ module.exports = class Boot {
   }
 
   start () {
-    const self = this
+    const dependencies = this._bundleDeps(this.main.module)
     const builtinRequire = require.builtin || require
-    const { cache } = this
 
-    return run(this.main.module)
-
-    function run (mod) {
-      if (cache[mod.filename]) return cache[mod.filename].exports
-
-      const m = cache[mod.filename] = {
-        exports: {}
-      }
-
-      if (mod.type === 'json') {
-        m.exports = JSON.parse(mod.source)
-        return m.exports
-      }
-
-      require.cache = cache
-      require.builtin = builtinRequire
-
-      const source = mod.source + '\n//# sourceURL=' + mod.filename
-      const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', '__src', 'eval(__src)') // eslint-disable-line no-new-func
-      wrap(require, mod.dirname, mod.filename, m, m.exports, source)
-
-      return m.exports
-
-      function require (req) {
-        if (self.linker.builtins.has(req)) {
-          return builtinRequire(req)
-        }
-
-        const output = resolve(mod, req)
-        if (!output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
-
-        if (req === 'node-gyp-build') return (dirname) => builtinRequire(path.resolve(self.cwd, self.prebuilds.get(unixResolve(dirname))))
-
-        const dep = self.dependencies.get(output)
-        return run(dep)
-      }
-    }
+    return this._run(this._run, dependencies, this.prebuilds, dependencies[this.main.module.filename], this.cache, this._createRequire, builtinRequire)
   }
 
   _bundleDeps (mod) {
@@ -131,15 +95,12 @@ module.exports = class Boot {
       }
 
       for (const r of mod.resolutions) {
-        const isModule = this.linker.builtins.has(r.input)
+        if (r.input === 'node-gyp-build') continue
 
-        if (isModule || !r.output) {
-          dep.requires[r.input] = { output: r.output, shouldNodeRequire: isModule }
-          continue
-        }
+        const isBuiltin = this.linker.builtins.has(r.input)
 
-        if (r.input === 'node-gyp-build') {
-          dep.requires[r.input] = { output: this.prebuilds.get(mod.dirname) }
+        if (isBuiltin || !r.output) {
+          dep.requires[r.input] = { output: r.output, isBuiltin }
           continue
         }
 
@@ -158,50 +119,57 @@ module.exports = class Boot {
     return `
     'use strict'
 
+    const prebuilds = ${JSON.stringify(this.prebuilds, null, 2)}
     const dependencies = ${JSON.stringify(dependencies, null, 2)}
-    const builtinRequire = require
+    const builtinRequire = require.builtin || require
 
-    run(dependencies['${this.main.module.filename}'])
+    _run(_run, dependencies, prebuilds, dependencies['${this.main.module.filename}'], {}, _createRequire, builtinRequire)
 
-    ${run.toString()}
+    function ${this._run.toString()}
+
+    function ${this._createRequire.toString()}
     `.trim()
+  }
 
-    // on purpose very similar to run() of start() to try re-use it
-    function run (mod, cache = {}) {
-      if (cache[mod.filename]) return cache[mod.filename].exports
+  _run (run, dependencies, prebuilds, mod, cache, createRequire, builtinRequire) {
+    if (cache[mod.filename]) return cache[mod.filename].exports
 
-      const m = cache[mod.filename] = {
-        exports: {}
-      }
+    const m = cache[mod.filename] = {
+      exports: {}
+    }
 
-      if (mod.type === 'json') {
-        m.exports = JSON.parse(mod.source)
-        return m.exports
-      }
-
-      require.cache = cache
-      require.builtin = builtinRequire // eslint-disable-line no-undef
-
-      const source = mod.source + '\n//# sourceURL=' + mod.filename
-      const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', '__src', 'eval(__src)') // eslint-disable-line no-new-func
-      wrap(require, mod.dirname, mod.filename, m, m.exports, source)
-
+    if (mod.type === 'json') {
+      m.exports = JSON.parse(mod.source)
       return m.exports
+    }
 
-      function require (req) {
-        const r = mod.requires[req]
+    const require = createRequire(mod, dependencies, prebuilds, { run, createRequire, builtinRequire, cache })
+    require.cache = cache
+    require.builtin = builtinRequire
 
-        if (r.shouldNodeRequire) {
-          return builtinRequire(r.output) // eslint-disable-line no-undef
-        }
+    const source = mod.source + '\n//# sourceURL=' + mod.filename
+    const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', '__src', 'eval(__src)') // eslint-disable-line no-new-func
+    wrap(require, mod.dirname, mod.filename, m, m.exports, source)
 
-        if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
+    return m.exports
+  }
 
-        if (req === 'node-gyp-build') return () => builtinRequire(r.output) // eslint-disable-line no-undef
-
-        const dep = dependencies[r.output]
-        return run(dep, cache)
+  _createRequire (mod, dependencies, prebuilds, { run, createRequire, builtinRequire, cache }) {
+    return function (req) {
+      if (req === 'node-gyp-build') {
+        return (dirname) => builtinRequire(prebuilds[dirname])
       }
+
+      const r = mod.requires[req]
+
+      if (r.isBuiltin) {
+        return builtinRequire(r.output)
+      }
+
+      if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
+
+      const dep = dependencies[r.output]
+      return run(run, dependencies, prebuilds, dep, cache, createRequire, builtinRequire)
     }
   }
 }

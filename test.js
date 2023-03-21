@@ -9,8 +9,10 @@ const Localdrive = require('localdrive')
 const MirrorDrive = require('mirror-drive')
 const Hyperswarm = require('hyperswarm')
 const createTestnet = require('@hyperswarm/testnet')
+const fs = require('fs')
 const fsp = require('fs/promises')
 const path = require('path')
+const os = require('os')
 
 test('basic', async function (t) {
   const [drive] = create()
@@ -153,17 +155,48 @@ test('require module with prebuilds', async function (t) {
     module.exports = buffer.toString('hex').length
   `))
 
-  const boot = new Boot(drive)
-
-  try {
-    await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
-  } catch {}
-
+  const boot = new Boot(drive, { cwd: createTmpDir(t), absolutePrebuilds: true })
   await boot.warmup()
 
   t.is(boot.start(), 64)
+})
 
-  await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
+test('absolute prebuilds path for stringify', async function (t) {
+  const [drive] = create()
+
+  const src = new Localdrive(__dirname)
+  await src.mirror(drive, { prefix: 'node_modules/sodium-native' }).done()
+  await src.mirror(drive, { prefix: 'node_modules/node-gyp-build' }).done()
+  await src.mirror(drive, { prefix: 'node_modules/b4a' }).done()
+
+  await drive.put('/index.js', Buffer.from(`
+    const sodium = require("sodium-native")
+    const b4a = require("b4a")
+
+    const buffer = b4a.allocUnsafe(32)
+    sodium.randombytes_buf(buffer)
+
+    module.exports = buffer.toString('hex').length
+  `))
+
+  {
+    const boot = new Boot(drive, { cwd: createTmpDir(t), absolutePrebuilds: false })
+    await boot.warmup()
+
+    try {
+      eval(boot.stringify()) // eslint-disable-line no-eval
+      t.fail('should have failed')
+    } catch (err) {
+      t.ok(isNodeRequire(err))
+    }
+  }
+
+  {
+    const boot = new Boot(drive, { cwd: createTmpDir(t), absolutePrebuilds: true })
+    await boot.warmup()
+
+    t.is(eval(boot.stringify()), 64) // eslint-disable-line no-eval
+  }
 })
 
 test('additional builtins', async function (t) {
@@ -194,14 +227,15 @@ test('additional builtins', async function (t) {
     await boot.warmup()
 
     try {
-      t.is(boot.start(), 64)
+      boot.start()
+      t.fail('should have failed')
     } catch (err) {
       t.ok(isBootRequire(err, 'sodium-native'))
     }
 
     try {
-      const source = boot.stringify()
-      t.is(eval(source), 64) // eslint-disable-line no-eval
+      eval(boot.stringify()) // eslint-disable-line no-eval
+      t.fail('should have failed')
     } catch (err) {
       t.ok(isBootRequire(err, 'sodium-native'))
     }
@@ -216,22 +250,18 @@ test('additional builtin is not installed', async function (t) {
   `))
 
   const boot = new Boot(drive, { additionalBuiltins: ['random-library'] })
-
-  try {
-    await boot.warmup()
-  } catch (err) {
-    t.ok(isNodeRequire(err))
-  }
+  await boot.warmup()
 
   try {
     boot.start()
+    t.fail('should have failed')
   } catch (err) {
     t.ok(isNodeRequire(err))
   }
 
   try {
-    const source = boot.stringify()
-    eval(source) // eslint-disable-line no-eval
+    eval(boot.stringify()) // eslint-disable-line no-eval
+    t.fail('should have failed')
   } catch (err) {
     t.ok(isNodeRequire(err))
   }
@@ -295,18 +325,11 @@ test('stringify with prebuilds', async function (t) {
     module.exports = buffer.toString('hex').length
   `))
 
-  const boot = new Boot(drive)
-
-  try {
-    await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
-  } catch {}
-
+  const boot = new Boot(drive, { cwd: createTmpDir(t), absolutePrebuilds: true })
   await boot.warmup()
 
   const source = boot.stringify()
   t.is(eval(source), 64) // eslint-disable-line no-eval
-
-  await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
 })
 
 test('require json file', async function (t) {
@@ -430,4 +453,21 @@ function isNodeRequire (err) {
 
 function isBootRequire (error, dependency) {
   return error.code === undefined && error.message.startsWith('Could not resolve ' + dependency)
+}
+
+function createTmpDir (t) {
+  const tmpdir = path.join(os.tmpdir(), 'localdrive-test-')
+  const dir = fs.mkdtempSync(tmpdir)
+  // Windows can't delete the folder (EPERM) due it's still used by a required module
+  if (process.platform !== 'win32') t.teardown(() => rmdir(dir))
+  return dir
+}
+
+async function rmdir (dir) {
+  try {
+    await fsp.rm(dir, { recursive: true })
+  } catch (error) {
+    if (error.code === 'ENOENT') return
+    throw error
+  }
 }
