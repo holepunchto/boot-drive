@@ -274,9 +274,11 @@ test('additional builtin is not installed', async function (t) {
 test('source overwrites', async function (t) {
   const [drive] = create()
 
+  await drive.put('/message.js', Buffer.from('module.exports = "hello"'))
+
   const boot = new Boot(drive, {
     sourceOverwrites: {
-      '/index.js': 'module.exports = "hello"'
+      '/index.js': 'module.exports = require("./message.js")'
     }
   })
 
