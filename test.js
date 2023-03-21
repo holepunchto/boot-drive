@@ -379,8 +379,11 @@ test('require main property', async function (t) {
   await boot.warmup()
 
   const main = {
-    path: '/',
     filename: '/index.js',
+    dirname: '/',
+    type: 'commonjs',
+    requires: {},
+    source: 'module.exports = require.main',
     exports: {}
   }
   main.exports = main
@@ -420,15 +423,38 @@ test('cache (internal)', async function (t) {
   await drive.put('/data.json', Buffer.from('{ "leet": 1337 }'))
 
   const cache = {}
+
   const boot = new Boot(drive, { cache })
   await boot.warmup()
 
   t.alike(cache, {})
+
   t.is(boot.start(), true)
-  t.alike(cache, {
-    '/index.js': { path: '/', filename: '/index.js', exports: true },
-    '/data.json': { path: '/', filename: '/data.json', exports: { leet: 1337 } }
-  })
+
+  const expected = {
+    '/index.js': {
+      filename: '/index.js',
+      dirname: '/',
+      type: 'commonjs',
+      requires: { './data.json': { output: '/data.json' } },
+      source: '\n' +
+        '    const data1 = require("./data.json")\n' +
+        '    const data2 = require("./data.json")\n' +
+        '    module.exports = data1 === data2\n' +
+        '  ',
+      exports: true
+    },
+    '/data.json': {
+      filename: '/data.json',
+      dirname: '/',
+      type: 'json',
+      requires: {},
+      source: '{ "leet": 1337 }',
+      exports: { leet: 1337 }
+    }
+  }
+
+  t.alike(cache, expected)
 
   // stringify() does not expose a cache to check against
   const source = boot.stringify()

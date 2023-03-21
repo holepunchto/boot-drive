@@ -96,7 +96,8 @@ module.exports = class Boot {
         dirname: mod.dirname,
         type: mod.type,
         requires: {},
-        source: mod.source
+        source: mod.source,
+        exports: {}
       }
 
       for (const r of mod.resolutions) {
@@ -140,11 +141,7 @@ module.exports = class Boot {
   _run (run, dependencies, prebuilds, entrypoint, mod, cache, createRequire, builtinRequire) {
     if (cache[mod.filename]) return cache[mod.filename].exports
 
-    const m = cache[mod.filename] = {
-      path: mod.dirname,
-      filename: mod.filename,
-      exports: {}
-    }
+    const m = cache[mod.filename] = mod
 
     if (mod.type === 'json') {
       m.exports = JSON.parse(mod.source)
