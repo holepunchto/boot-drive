@@ -52,6 +52,8 @@ Available `options`:
 `additionalBuiltins` is for adding modules to be imported by Node's native `require`.\
 `sourceOverwrites` is a key value object where you can map filenames to source code.
 
+Without `absolutePrebuilds` native modules has to always be in `./prebuilds/` related to the execution or source file.
+
 When running a drive, there is `require.builtinRequire` provided by the JS runtime itself.
 
 #### `await boot.warmup()`
@@ -69,8 +71,6 @@ Runs the drive.
 #### `const source = boot.stringify()`
 
 Bundles and stringifies the dependencies and source code of the drive.
-
-Without `absolutePrebuilds` native modules has to always be in `./prebuilds/` related to the source file.
 
 ## License
 MIT
