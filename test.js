@@ -472,6 +472,23 @@ test('error stack', async function (t) {
   }
 })
 
+test('exports correctly even if returns different', async function (t) {
+  const [drive] = create()
+
+  await drive.put('/index.js', Buffer.from(`
+    module.exports = 'a'
+
+    'b'
+  `))
+
+  const boot = new Boot(drive)
+  await boot.warmup()
+
+  t.is(boot.start(), 'a')
+
+  t.is(eval(boot.stringify()), 'a') // eslint-disable-line no-eval
+})
+
 async function replicate (t, bootstrap, corestore, drive, { server = false, client = false } = {}) {
   await drive.ready()
 
