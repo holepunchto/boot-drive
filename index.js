@@ -23,7 +23,7 @@ module.exports = class Boot {
 
     this.linker = new ScriptLinker({
       readFile: async (name) => {
-        if (opts.sourceOverwrites && typeof opts.sourceOverwrites[name] === 'string') {
+        if (opts.sourceOverwrites && Object.prototype.hasOwnProperty.call(opts.sourceOverwrites, name)) {
           return opts.sourceOverwrites[name]
         }
 
