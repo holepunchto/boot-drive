@@ -480,7 +480,8 @@ function isBootRequire (error, dependency) {
 function createTmpDir (t) {
   const tmpdir = path.join(os.tmpdir(), 'localdrive-test-')
   const dir = fs.mkdtempSync(tmpdir)
-  t.teardown(() => rmdir(dir))
+  // Windows can't delete the folder (EPERM) due it's still used by a required module
+  if (process.platform !== 'win32') t.teardown(() => rmdir(dir))
   return dir
 }
 
