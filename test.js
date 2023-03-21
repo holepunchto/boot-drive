@@ -156,18 +156,9 @@ test('require module with prebuilds', async function (t) {
   `))
 
   const boot = new Boot(drive, { cwd: createTmpDir(t), absolutePrebuilds: true })
-
-  /* const boot = new Boot(drive)
-
-  try {
-    await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
-  } catch {} */
-
   await boot.warmup()
 
   t.is(boot.start(), 64)
-
-  // await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
 })
 
 test('absolute prebuilds path for stringify', async function (t) {
@@ -335,17 +326,10 @@ test('stringify with prebuilds', async function (t) {
   `))
 
   const boot = new Boot(drive, { cwd: createTmpDir(t), absolutePrebuilds: true })
-
-  /* try {
-    await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
-  } catch {} */
-
   await boot.warmup()
 
   const source = boot.stringify()
   t.is(eval(source), 64) // eslint-disable-line no-eval
-
-  // await fsp.rm(path.resolve(boot.cwd, './prebuilds'), { recursive: true })
 })
 
 test('require json file', async function (t) {
