@@ -52,6 +52,8 @@ Available `options`:
 `additionalBuiltins` is for adding modules to be imported by Node's native `require`.\
 `sourceOverwrites` is a key value object where you can map filenames to source code.
 
+When running a drive, there is `require.builtinRequire` provided by the JS runtime itself.
+
 #### `await boot.warmup()`
 
 Prepares the drive.
