@@ -23,6 +23,10 @@ module.exports = class Boot {
 
     this.linker = new ScriptLinker({
       readFile: async (name) => {
+        if (opts.sourceOverwrites && typeof opts.sourceOverwrites[name] === 'string') {
+          return opts.sourceOverwrites[name]
+        }
+
         const buffer = await this.drive.get(name)
         if (!buffer) throw new Error('ENOENT: ' + name)
         return buffer

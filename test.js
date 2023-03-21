@@ -271,6 +271,22 @@ test('additional builtin is not installed', async function (t) {
   }
 })
 
+test('source overwrites', async function (t) {
+  const [drive] = create()
+
+  const boot = new Boot(drive, {
+    sourceOverwrites: {
+      '/index.js': 'module.exports = "hello"'
+    }
+  })
+
+  await boot.warmup()
+
+  t.is(boot.start(), 'hello')
+
+  t.is(eval(boot.stringify()), 'hello') // eslint-disable-line no-eval
+})
+
 test('remote drive', async function (t) {
   const { bootstrap } = await createTestnet(3, t.teardown)
 

@@ -41,14 +41,16 @@ Available `options`:
   absolutePrebuilds: false,
   cache: {},
   dependencies: new Map(),
-  additionalBuiltins: []
+  additionalBuiltins: [],
+  sourceOverwrites: {}
 }
 ```
 
 `cwd` is the working directory for `prebuilds/` (default: `.`).\
 `absolutePrebuilds` will make use of `cwd` for the prebuilds path, included on the stringified output.\
 `dependencies` is used in `warmup()`, you can share linker deps between boots.\
-`additionalBuiltins` is for adding modules to be imported by Node's native `require`.
+`additionalBuiltins` is for adding modules to be imported by Node's native `require`.\
+`sourceOverwrites` is a key value object where you can map filenames to source code.
 
 #### `await boot.warmup()`
 
