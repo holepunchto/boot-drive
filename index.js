@@ -23,6 +23,10 @@ module.exports = class Boot {
 
     this.linker = new ScriptLinker({
       readFile: async (name) => {
+        if (opts.sourceOverwrites && Object.prototype.hasOwnProperty.call(opts.sourceOverwrites, name)) {
+          return opts.sourceOverwrites[name]
+        }
+
         const buffer = await this.drive.get(name)
         if (!buffer) throw new Error('ENOENT: ' + name)
         return buffer
@@ -75,9 +79,10 @@ module.exports = class Boot {
 
   start () {
     const dependencies = this._bundleDeps(this.main.module)
-    const builtinRequire = require.builtin || require
+    const builtinRequire = require.builtinRequire || require
+    const entrypoint = this.main.module.filename
 
-    return this._run(this._run, dependencies, this.prebuilds, dependencies[this.main.module.filename], this.cache, this._createRequire, builtinRequire)
+    return this._run(this._run, dependencies, this.prebuilds, entrypoint, dependencies[entrypoint], this.cache, this._createRequire, builtinRequire)
   }
 
   _bundleDeps (mod) {
@@ -91,7 +96,8 @@ module.exports = class Boot {
         dirname: mod.dirname,
         type: mod.type,
         requires: {},
-        source: mod.source
+        source: mod.source,
+        exports: {}
       }
 
       for (const r of mod.resolutions) {
@@ -121,9 +127,10 @@ module.exports = class Boot {
 
     const prebuilds = ${JSON.stringify(this.prebuilds, null, 2)}
     const dependencies = ${JSON.stringify(dependencies, null, 2)}
-    const builtinRequire = require.builtin || require
+    const entrypoint = ${JSON.stringify(this.main.module.filename)}
+    const builtinRequire = require.builtinRequire || require
 
-    _run(_run, dependencies, prebuilds, dependencies['${this.main.module.filename}'], {}, _createRequire, builtinRequire)
+    _run(_run, dependencies, prebuilds, entrypoint, dependencies[entrypoint], {}, _createRequire, builtinRequire)
 
     function ${this._run.toString()}
 
@@ -131,21 +138,20 @@ module.exports = class Boot {
     `.trim()
   }
 
-  _run (run, dependencies, prebuilds, mod, cache, createRequire, builtinRequire) {
+  _run (run, dependencies, prebuilds, entrypoint, mod, cache, createRequire, builtinRequire) {
     if (cache[mod.filename]) return cache[mod.filename].exports
 
-    const m = cache[mod.filename] = {
-      exports: {}
-    }
+    const m = cache[mod.filename] = mod
 
     if (mod.type === 'json') {
       m.exports = JSON.parse(mod.source)
       return m.exports
     }
 
-    const require = createRequire(mod, dependencies, prebuilds, { run, createRequire, builtinRequire, cache })
+    const require = createRequire(mod, dependencies, prebuilds, { run, entrypoint, createRequire, builtinRequire, cache })
+    require.main = cache[entrypoint]
     require.cache = cache
-    require.builtin = builtinRequire
+    require.builtinRequire = builtinRequire
 
     const source = mod.source + '\n//# sourceURL=' + mod.filename
     const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', '__src', 'eval(__src)') // eslint-disable-line no-new-func
@@ -154,7 +160,7 @@ module.exports = class Boot {
     return m.exports
   }
 
-  _createRequire (mod, dependencies, prebuilds, { run, createRequire, builtinRequire, cache }) {
+  _createRequire (mod, dependencies, prebuilds, { run, entrypoint, createRequire, builtinRequire, cache }) {
     return function (req) {
       if (req === 'node-gyp-build') {
         return (dirname) => builtinRequire(prebuilds[dirname])
@@ -169,7 +175,7 @@ module.exports = class Boot {
       if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
 
       const dep = dependencies[r.output]
-      return run(run, dependencies, prebuilds, dep, cache, createRequire, builtinRequire)
+      return run(run, dependencies, prebuilds, entrypoint, dep, cache, createRequire, builtinRequire)
     }
   }
 }

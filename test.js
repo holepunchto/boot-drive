@@ -23,6 +23,8 @@ test('basic', async function (t) {
   await boot.warmup()
 
   t.is(boot.start(), 'hello')
+
+  t.is(eval(boot.stringify()), 'hello') // eslint-disable-line no-eval
 })
 
 test('entrypoint', async function (t) {
@@ -132,6 +134,8 @@ test('require file within drive', async function (t) {
   await boot.warmup()
 
   t.is(boot.start(), 'hello func: 4')
+
+  t.is(eval(boot.stringify()), 'hello func: 4') // eslint-disable-line no-eval
 })
 
 test('require module with prebuilds', async function (t) {
@@ -267,6 +271,24 @@ test('additional builtin is not installed', async function (t) {
   }
 })
 
+test('source overwrites', async function (t) {
+  const [drive] = create()
+
+  await drive.put('/message.js', Buffer.from('module.exports = "hello"'))
+
+  const boot = new Boot(drive, {
+    sourceOverwrites: {
+      '/index.js': 'module.exports = require("./message.js")'
+    }
+  })
+
+  await boot.warmup()
+
+  t.is(boot.start(), 'hello')
+
+  t.is(eval(boot.stringify()), 'hello') // eslint-disable-line no-eval
+})
+
 test('remote drive', async function (t) {
   const { bootstrap } = await createTestnet(3, t.teardown)
 
@@ -350,6 +372,29 @@ test('require json file', async function (t) {
   t.alike(eval(source), { assert: true }) // eslint-disable-line no-eval
 })
 
+test('require main property', async function (t) {
+  const [drive] = create()
+
+  await drive.put('/index.js', Buffer.from('module.exports = require.main'))
+
+  const boot = new Boot(drive)
+  await boot.warmup()
+
+  const main = {
+    filename: '/index.js',
+    dirname: '/',
+    type: 'commonjs',
+    requires: {},
+    source: 'module.exports = require.main',
+    exports: {}
+  }
+  main.exports = main
+
+  t.alike(boot.start(), main)
+
+  t.alike(eval(boot.stringify()), main) // eslint-disable-line no-eval
+})
+
 test('cache (shallow)', async function (t) {
   const [drive] = create()
 
@@ -375,21 +420,47 @@ test('cache (internal)', async function (t) {
   await drive.put('/index.js', Buffer.from(`
     const data1 = require("./data.json")
     const data2 = require("./data.json")
-    module.exports = data1 === data2
+    module.exports = require.cache
   `))
   await drive.put('/data.json', Buffer.from('{ "leet": 1337 }'))
 
   const cache = {}
+
   const boot = new Boot(drive, { cache })
   await boot.warmup()
 
   t.alike(cache, {})
-  t.is(boot.start(), true)
-  t.alike(cache, { '/index.js': { exports: true }, '/data.json': { exports: { leet: 1337 } } })
 
-  // stringify() does not expose a cache to check against
-  const source = boot.stringify()
-  t.is(eval(source), true) // eslint-disable-line no-eval
+  const expected = {
+    '/index.js': {
+      filename: '/index.js',
+      dirname: '/',
+      type: 'commonjs',
+      requires: { './data.json': { output: '/data.json' } },
+      source: '\n' +
+        '    const data1 = require("./data.json")\n' +
+        '    const data2 = require("./data.json")\n' +
+        '    module.exports = require.cache\n' +
+        '  ',
+      exports: {} // Circular reference
+    },
+    '/data.json': {
+      filename: '/data.json',
+      dirname: '/',
+      type: 'json',
+      requires: {},
+      source: '{ "leet": 1337 }',
+      exports: { leet: 1337 }
+    }
+  }
+
+  expected['/index.js'].exports = expected // Circular reference
+
+  t.alike(boot.start(), expected)
+
+  t.alike(cache, expected)
+
+  t.alike(eval(boot.stringify()), expected) // eslint-disable-line no-eval
 })
 
 test('error stack', async function (t) {
@@ -427,6 +498,23 @@ test('error stack', async function (t) {
     t.is(stack[1], 'at foo (/index.js:3:29)')
     t.is(stack[2], 'at eval (/index.js:2:5)')
   }
+})
+
+test('exports correctly even if returns different', async function (t) {
+  const [drive] = create()
+
+  await drive.put('/index.js', Buffer.from(`
+    module.exports = 'a'
+
+    'b'
+  `))
+
+  const boot = new Boot(drive)
+  await boot.warmup()
+
+  t.is(boot.start(), 'a')
+
+  t.is(eval(boot.stringify()), 'a') // eslint-disable-line no-eval
 })
 
 async function replicate (t, bootstrap, corestore, drive, { server = false, client = false } = {}) {

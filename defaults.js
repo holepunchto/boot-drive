@@ -1,4 +1,4 @@
-const builtinRequire = require.builtin || require
+const builtinRequire = require.builtinRequire || require
 
 function createBuiltins (additionalBuiltins) {
   let builtins = null
