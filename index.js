@@ -123,18 +123,20 @@ module.exports = class Boot {
     const dependencies = this._bundleDeps(this.main.module)
 
     return `
-    'use strict'
+    (function () {
+      'use strict'
 
-    const prebuilds = ${JSON.stringify(this.prebuilds, null, 2)}
-    const dependencies = ${JSON.stringify(dependencies, null, 2)}
-    const entrypoint = ${JSON.stringify(this.main.module.filename)}
-    const builtinRequire = require.builtinRequire || require
+      const prebuilds = ${JSON.stringify(this.prebuilds, null, 2)}
+      const dependencies = ${JSON.stringify(dependencies, null, 2)}
+      const entrypoint = ${JSON.stringify(this.main.module.filename)}
+      const builtinRequire = require.builtinRequire || require
 
-    _run(_run, dependencies, prebuilds, entrypoint, dependencies[entrypoint], {}, _createRequire, builtinRequire)
+      return _run(_run, dependencies, prebuilds, entrypoint, dependencies[entrypoint], {}, _createRequire, builtinRequire)
 
-    function ${this._run.toString()}
+      function ${this._run.toString()}
 
-    function ${this._createRequire.toString()}
+      function ${this._createRequire.toString()}
+    })()
     `.trim()
   }
 
