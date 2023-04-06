@@ -36,17 +36,26 @@ module.exports = class Boot {
   }
 
   async _savePrebuildToDisk (mod) {
-    const hasBuilds = resolve(mod, 'node-gyp-build')
-    if (!hasBuilds) return
-
     let dirname = mod.dirname
     let buffer = null
-    while (true) {
-      const entrypath = dirname + '/prebuilds/' + process.platform + '-' + process.arch + '/node.napi.node'
-      buffer = await this.drive.get(entrypath)
-      if (buffer) break
-      if (dirname === '/') return
-      dirname = unixResolve(dirname, '..')
+
+    if (resolve(mod, 'node-gyp-build')) {
+      while (true) {
+        const entrypath = dirname + '/prebuilds/' + process.platform + '-' + process.arch + '/node.napi.node'
+        buffer = await this.drive.get(entrypath)
+        if (buffer) break
+        if (dirname === '/') return
+        dirname = unixResolve(dirname, '..')
+      }
+    } else {
+      const hasBuilds = resolveDevDeps(mod, 'node-gyp')
+      if (!hasBuilds) return
+
+      const isPrebuild = mod.filename.endsWith('.node')
+      if (!isPrebuild) return
+
+      buffer = await this.drive.get(mod.filename)
+      // if (!buffer) return // + I think we can assume it exists due linker?
     }
 
     const basename = mod.package?.name + '-' + generichash(buffer) + '.node'
@@ -91,6 +100,11 @@ module.exports = class Boot {
 
     while (stack.length) {
       const mod = stack.pop()
+
+      if (resolveDevDeps(mod, 'node-gyp') && mod.filename.endsWith('.node')) {
+        continue
+      }
+
       const dep = dependencies[mod.filename] = {
         filename: mod.filename,
         dirname: mod.dirname,
@@ -190,6 +204,14 @@ function resolve (mod, input) {
     }
   }
   return null
+}
+
+function resolveDevDeps (mod, pkg) {
+  if (!mod._moduleInfo || !mod._moduleInfo.package) return false
+  for (const name in mod._moduleInfo.package.devDependencies) {
+    if (name === pkg) return true
+  }
+  return false
 }
 
 async function atomicWriteFile (filename, buffer) {
