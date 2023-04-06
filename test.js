@@ -15,6 +15,8 @@ const path = require('path')
 const os = require('os')
 
 test('basic', async function (t) {
+  t.plan(2)
+
   const [drive] = create()
 
   await drive.put('/index.js', Buffer.from('module.exports = "hello"'))
@@ -28,6 +30,8 @@ test('basic', async function (t) {
 })
 
 test('entrypoint', async function (t) {
+  t.plan(2)
+
   const [drive] = create()
   await drive.put('/random-file.js', Buffer.from('module.exports = "hello"'))
 
@@ -35,9 +39,13 @@ test('entrypoint', async function (t) {
   await boot.warmup()
 
   t.is(boot.start(), 'hello')
+
+  t.is(eval(boot.stringify()), 'hello') // eslint-disable-line no-eval
 })
 
 test('entrypoint from package.json', async function (t) {
+  t.plan(2)
+
   const [drive] = create()
 
   await drive.put('/package.json', Buffer.from(JSON.stringify({ main: 'random-file.js' })))
@@ -47,9 +55,13 @@ test('entrypoint from package.json', async function (t) {
   await boot.warmup()
 
   t.is(boot.start(), 'hello')
+
+  t.is(eval(boot.stringify()), 'hello') // eslint-disable-line no-eval
 })
 
 test('no file', async function (t) {
+  t.plan(1)
+
   const [drive] = create()
 
   const boot = new Boot(drive)
@@ -63,6 +75,8 @@ test('no file', async function (t) {
 })
 
 test('entrypoint not found', async function (t) {
+  t.plan(1)
+
   const [drive] = create()
 
   await drive.put('/random-file.js', Buffer.from('module.exports = "hello"'))
@@ -78,6 +92,8 @@ test('entrypoint not found', async function (t) {
 })
 
 test('default working directory', async function (t) {
+  t.plan(1)
+
   const [drive] = create()
 
   const boot = new Boot(drive)
@@ -85,6 +101,8 @@ test('default working directory', async function (t) {
 })
 
 test('change working directory', async function (t) {
+  t.plan(1)
+
   const [drive] = create()
 
   const boot = new Boot(drive, { cwd: './working-dir' })
@@ -92,6 +110,8 @@ test('change working directory', async function (t) {
 })
 
 test('dependencies', async function (t) {
+  t.plan(9)
+
   const [drive] = create()
 
   await drive.put('/index.js', Buffer.from('module.exports = "hello"'))
@@ -102,6 +122,7 @@ test('dependencies', async function (t) {
   t.is(boot.dependencies.size, 1)
   t.ok(boot.dependencies.has('/index.js'))
   t.is(boot.start(), 'hello')
+  t.is(eval(boot.stringify()), 'hello') // eslint-disable-line no-eval
 
   await drive.del('/index.js')
 
@@ -117,9 +138,12 @@ test('dependencies', async function (t) {
   t.is(boot3.dependencies, boot.dependencies)
   await boot3.warmup()
   t.is(boot3.start(), 'hello')
+  t.is(eval(boot3.stringify()), 'hello') // eslint-disable-line no-eval
 })
 
 test('require file within drive', async function (t) {
+  t.plan(2)
+
   const [drive] = create()
 
   await drive.put('/index.js', Buffer.from(`
@@ -139,6 +163,8 @@ test('require file within drive', async function (t) {
 })
 
 test('require module with prebuilds', async function (t) {
+  t.plan(2)
+
   const [drive] = create()
 
   const src = new Localdrive(__dirname)
@@ -163,9 +189,13 @@ test('require module with prebuilds', async function (t) {
   await boot.warmup()
 
   t.is(boot.start(), 64)
+
+  t.is(eval(boot.stringify()), 64) // eslint-disable-line no-eval
 })
 
 test('absolute prebuilds path for stringify', async function (t) {
+  t.plan(2)
+
   const [drive] = create()
 
   const src = new Localdrive(__dirname)
@@ -204,6 +234,8 @@ test('absolute prebuilds path for stringify', async function (t) {
 })
 
 test('additional builtins', async function (t) {
+  t.plan(4)
+
   const [drive] = create()
 
   const sodium = require('sodium-native')
@@ -247,6 +279,8 @@ test('additional builtins', async function (t) {
 })
 
 test('additional builtin is not installed', async function (t) {
+  t.plan(2)
+
   const [drive] = create()
 
   await drive.put('/index.js', Buffer.from(`
@@ -272,6 +306,8 @@ test('additional builtin is not installed', async function (t) {
 })
 
 test('source overwrites', async function (t) {
+  t.plan(2)
+
   const [drive] = create()
 
   await drive.put('/message.js', Buffer.from('module.exports = "hello"'))
@@ -290,6 +326,8 @@ test('source overwrites', async function (t) {
 })
 
 test('remote drive', async function (t) {
+  t.plan(2)
+
   const { bootstrap } = await createTestnet(3, t.teardown)
 
   // seed
@@ -306,27 +344,13 @@ test('remote drive', async function (t) {
   await boot.warmup()
 
   t.is(boot.start(), 'hello')
-})
 
-test('stringify', async function (t) {
-  const [drive] = create()
-
-  await drive.put('/index.js', Buffer.from(`
-    const net = require("net")
-    const func = require("./func.js")
-    const isIP = net.isIP('127.0.0.1')
-    module.exports = func() + ': ' + isIP
-  `.trim()))
-  await drive.put('/func.js', Buffer.from('module.exports = () => "hello func"'))
-
-  const boot = new Boot(drive)
-  await boot.warmup()
-
-  const source = boot.stringify()
-  t.is(eval(source), 'hello func: 4') // eslint-disable-line no-eval
+  t.is(eval(boot.stringify()), 'hello') // eslint-disable-line no-eval
 })
 
 test('stringify with prebuilds', async function (t) {
+  t.plan(2)
+
   const [drive] = create()
 
   const src = new Localdrive(__dirname)
@@ -350,11 +374,15 @@ test('stringify with prebuilds', async function (t) {
   const boot = new Boot(drive, { cwd: createTmpDir(t), absolutePrebuilds: true })
   await boot.warmup()
 
+  t.is(boot.start(), 64)
+
   const source = boot.stringify()
   t.is(eval(source), 64) // eslint-disable-line no-eval
 })
 
 test('require json file', async function (t) {
+  t.plan(2)
+
   const [drive] = create()
 
   await drive.put('/index.js', Buffer.from(`
@@ -373,6 +401,8 @@ test('require json file', async function (t) {
 })
 
 test('require main property', async function (t) {
+  t.plan(2)
+
   const [drive] = create()
 
   await drive.put('/index.js', Buffer.from('module.exports = require.main'))
@@ -396,6 +426,8 @@ test('require main property', async function (t) {
 })
 
 test('cache (shallow)', async function (t) {
+  t.plan(2)
+
   const [drive] = create()
 
   await drive.put('/index.js', Buffer.from(`
@@ -415,6 +447,8 @@ test('cache (shallow)', async function (t) {
 })
 
 test('cache (internal)', async function (t) {
+  t.plan(4)
+
   const [drive] = create()
 
   await drive.put('/index.js', Buffer.from(`
@@ -464,6 +498,8 @@ test('cache (internal)', async function (t) {
 })
 
 test('error stack', async function (t) {
+  t.plan(6)
+
   const [drive] = create()
 
   await drive.put('/index.js', Buffer.from(`
@@ -501,6 +537,8 @@ test('error stack', async function (t) {
 })
 
 test('exports correctly even if returns different', async function (t) {
+  t.plan(2)
+
   const [drive] = create()
 
   await drive.put('/index.js', Buffer.from(`

@@ -23,7 +23,7 @@ module.exports = class Boot {
 
     this.linker = new ScriptLinker({
       readFile: async (name) => {
-        if (opts.sourceOverwrites && Object.prototype.hasOwnProperty.call(opts.sourceOverwrites, name)) {
+        if (opts.sourceOverwrites && Object.hasOwn(opts.sourceOverwrites, name)) {
           return opts.sourceOverwrites[name]
         }
 
@@ -82,7 +82,7 @@ module.exports = class Boot {
     const builtinRequire = require.builtinRequire || require
     const entrypoint = this.main.module.filename
 
-    return this._run(this._run, dependencies, this.prebuilds, entrypoint, dependencies[entrypoint], this.cache, this._createRequire, builtinRequire)
+    return this.__RUN__(this.__RUN__, dependencies, this.prebuilds, entrypoint, dependencies[entrypoint], this.cache, this.__CREATE_REQUIRE__, builtinRequire)
   }
 
   _bundleDeps (mod) {
@@ -126,21 +126,21 @@ module.exports = class Boot {
     (function () {
       'use strict'
 
-      const prebuilds = ${JSON.stringify(this.prebuilds, null, 2)}
-      const dependencies = ${JSON.stringify(dependencies, null, 2)}
-      const entrypoint = ${JSON.stringify(this.main.module.filename)}
-      const builtinRequire = require.builtinRequire || require
+      const __PREBUILDS__ = ${JSON.stringify(this.prebuilds, null, 2)}
+      const __DEPENDENCIES__ = ${JSON.stringify(dependencies, null, 2)}
+      const __ENTRYPOINT__ = ${JSON.stringify(this.main.module.filename)}
+      const __BUILTIN_REQUIRE__ = require.builtinRequire || require
 
-      return _run(_run, dependencies, prebuilds, entrypoint, dependencies[entrypoint], {}, _createRequire, builtinRequire)
+      return __RUN__(__RUN__, __DEPENDENCIES__, __PREBUILDS__, __ENTRYPOINT__, __DEPENDENCIES__[__ENTRYPOINT__], {}, __CREATE_REQUIRE__, __BUILTIN_REQUIRE__)
 
-      function ${this._run.toString()}
+      function ${this.__RUN__.toString()}
 
-      function ${this._createRequire.toString()}
+      function ${this.__CREATE_REQUIRE__.toString()}
     })()
     `.trim()
   }
 
-  _run (run, dependencies, prebuilds, entrypoint, mod, cache, createRequire, builtinRequire) {
+  __RUN__ (run, dependencies, prebuilds, entrypoint, mod, cache, createRequire, builtinRequire) {
     if (cache[mod.filename]) return cache[mod.filename].exports
 
     const m = cache[mod.filename] = mod
@@ -162,7 +162,7 @@ module.exports = class Boot {
     return m.exports
   }
 
-  _createRequire (mod, dependencies, prebuilds, { run, entrypoint, createRequire, builtinRequire, cache }) {
+  __CREATE_REQUIRE__ (mod, dependencies, prebuilds, { run, entrypoint, createRequire, builtinRequire, cache }) {
     return function (req) {
       if (req === 'node-gyp-build') {
         return (dirname) => builtinRequire(prebuilds[dirname])
