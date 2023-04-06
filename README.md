@@ -1,6 +1,6 @@
 # boot-drive
 
-Run an app from a Hyperdrive or Localdrive.
+Run an app from a Hyperdrive or Localdrive
 
 ```
 npm i boot-drive
