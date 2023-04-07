@@ -78,14 +78,16 @@ module.exports = class Boot {
   }
 
   start () {
-    const prebuilds = this.prebuilds
-    const dependencies = this._bundleDeps(this.main.module)
-    const entrypoint = this.main.module.filename
-    const cache = this.cache
-    const createRequire = this._createRequire
-    const builtinRequire = require.builtinRequire || require
+    const boot = {
+      prebuilds: this.prebuilds,
+      dependencies: this._bundleDeps(this.main.module),
+      entrypoint: this.main.module.filename,
+      cache: this.cache,
+      createRequire: this._createRequire,
+      builtinRequire: require.builtinRequire || require
+    }
 
-    return this._run(this._run, { dependencies, prebuilds, entrypoint, cache, createRequire, builtinRequire }, dependencies[entrypoint])
+    return this._run(this._run, boot, boot.dependencies[boot.entrypoint])
   }
 
   _bundleDeps (mod) {
