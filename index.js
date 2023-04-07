@@ -159,7 +159,7 @@ module.exports = class Boot {
       return m.exports
     }
 
-    const require = createRequire(mod, dependencies, prebuilds, { run, entrypoint, createRequire, builtinRequire, cache })
+    const require = createRequire(run, { dependencies, prebuilds, entrypoint, cache, createRequire, builtinRequire }, mod)
     require.main = cache[entrypoint]
     require.cache = cache
     require.builtinRequire = builtinRequire
@@ -171,7 +171,7 @@ module.exports = class Boot {
     return m.exports
   }
 
-  _createRequire (mod, dependencies, prebuilds, { run, entrypoint, createRequire, builtinRequire, cache }) {
+  _createRequire (run, { dependencies, prebuilds, entrypoint, cache, createRequire, builtinRequire }, mod) {
     return function (req) {
       if (req === 'node-gyp-build') {
         return (dirname) => builtinRequire(prebuilds[dirname])
