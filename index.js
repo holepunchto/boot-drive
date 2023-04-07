@@ -82,10 +82,10 @@ module.exports = class Boot {
     const dependencies = this._bundleDeps(this.main.module)
     const entrypoint = this.main.module.filename
     const cache = this.cache
-    const createRequire = this.__BOOTDRIVE_CREATE_REQUIRE__
+    const createRequire = this._createRequire
     const builtinRequire = require.builtinRequire || require
 
-    return this.__BOOTDRIVE_RUN__(this.__BOOTDRIVE_RUN__, { dependencies, prebuilds, entrypoint, cache, createRequire, builtinRequire }, dependencies[entrypoint])
+    return this._run(this._run, { dependencies, prebuilds, entrypoint, cache, createRequire, builtinRequire }, dependencies[entrypoint])
   }
 
   _bundleDeps (mod) {
@@ -140,14 +140,14 @@ module.exports = class Boot {
 
       return __BOOTDRIVE_RUN__(__BOOTDRIVE_RUN__, __BOOTDRIVE__, __BOOTDRIVE__.dependencies[__BOOTDRIVE__.entrypoint])
 
-      function ${this.__BOOTDRIVE_RUN__.toString()}
+      function ${this._run.toString().replace('_run', '__BOOTDRIVE_RUN__')}
 
-      function ${this.__BOOTDRIVE_CREATE_REQUIRE__.toString()}
+      function ${this._createRequire.toString().replace('_createRequire', '__BOOTDRIVE_CREATE_REQUIRE__')}
     })()
     `.trim()
   }
 
-  __BOOTDRIVE_RUN__ (run, { dependencies, prebuilds, entrypoint, cache, createRequire, builtinRequire }, mod) {
+  _run (run, { dependencies, prebuilds, entrypoint, cache, createRequire, builtinRequire }, mod) {
     if (cache[mod.filename]) return cache[mod.filename].exports
 
     const m = cache[mod.filename] = mod
@@ -169,7 +169,7 @@ module.exports = class Boot {
     return m.exports
   }
 
-  __BOOTDRIVE_CREATE_REQUIRE__ (mod, dependencies, prebuilds, { run, entrypoint, createRequire, builtinRequire, cache }) {
+  _createRequire (mod, dependencies, prebuilds, { run, entrypoint, createRequire, builtinRequire, cache }) {
     return function (req) {
       if (req === 'node-gyp-build') {
         return (dirname) => builtinRequire(prebuilds[dirname])
