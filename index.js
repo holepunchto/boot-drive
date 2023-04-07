@@ -78,11 +78,14 @@ module.exports = class Boot {
   }
 
   start () {
+    const prebuilds = this.prebuilds
     const dependencies = this._bundleDeps(this.main.module)
-    const builtinRequire = require.builtinRequire || require
     const entrypoint = this.main.module.filename
+    const cache = this.cache
+    const createRequire = this.__BOOTDRIVE_CREATE_REQUIRE__
+    const builtinRequire = require.builtinRequire || require
 
-    return this.__BOOTDRIVE_RUN__(this.__BOOTDRIVE_RUN__, dependencies, this.prebuilds, entrypoint, dependencies[entrypoint], this.cache, this.__BOOTDRIVE_CREATE_REQUIRE__, builtinRequire)
+    return this.__BOOTDRIVE_RUN__(this.__BOOTDRIVE_RUN__, { dependencies, prebuilds, entrypoint, cache, createRequire, builtinRequire }, dependencies[entrypoint])
   }
 
   _bundleDeps (mod) {
@@ -130,19 +133,12 @@ module.exports = class Boot {
         prebuilds: ${JSON.stringify(this.prebuilds, null, 2)},
         dependencies: ${JSON.stringify(dependencies, null, 2)},
         entrypoint: ${JSON.stringify(this.main.module.filename)},
+        cache: {},
+        createRequire: __BOOTDRIVE_CREATE_REQUIRE__,
         builtinRequire: require.builtinRequire || require
       }
 
-      return __BOOTDRIVE_RUN__(
-        __BOOTDRIVE_RUN__,
-        __BOOTDRIVE__.dependencies,
-        __BOOTDRIVE__.prebuilds,
-        __BOOTDRIVE__.entrypoint,
-        __BOOTDRIVE__.dependencies[__BOOTDRIVE__.entrypoint],
-        {},
-        __BOOTDRIVE_CREATE_REQUIRE__,
-        __BOOTDRIVE__.builtinRequire
-      )
+      return __BOOTDRIVE_RUN__(__BOOTDRIVE_RUN__, __BOOTDRIVE__, __BOOTDRIVE__.dependencies[__BOOTDRIVE__.entrypoint])
 
       function ${this.__BOOTDRIVE_RUN__.toString()}
 
@@ -151,7 +147,7 @@ module.exports = class Boot {
     `.trim()
   }
 
-  __BOOTDRIVE_RUN__ (run, dependencies, prebuilds, entrypoint, mod, cache, createRequire, builtinRequire) {
+  __BOOTDRIVE_RUN__ (run, { dependencies, prebuilds, entrypoint, cache, createRequire, builtinRequire }, mod) {
     if (cache[mod.filename]) return cache[mod.filename].exports
 
     const m = cache[mod.filename] = mod
@@ -188,7 +184,7 @@ module.exports = class Boot {
       if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
 
       const dep = dependencies[r.output]
-      return run(run, dependencies, prebuilds, entrypoint, dep, cache, createRequire, builtinRequire)
+      return run(run, { dependencies, prebuilds, entrypoint, cache, createRequire, builtinRequire }, dep)
     }
   }
 }
