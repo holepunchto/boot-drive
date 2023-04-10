@@ -64,9 +64,9 @@ If `entrypoint` is not set, then it will try `/package.json` `main` property.
 
 If it fails to find an `entrypoint` then it will use `index.js` by default.
 
-#### `const exports = boot.start()`
+#### `const exports = boot.start([builtinRequire])`
 
-Runs the drive.
+Runs the drive. Optionally pass in the `builtinRequire` function that will be used to load prebuilds and will be set as `require.builtinRequire` (defaults to boot-drive `require` function).
 
 #### `const source = boot.stringify()`
 

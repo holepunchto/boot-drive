@@ -77,11 +77,9 @@ module.exports = class Boot {
     }
   }
 
-  start () {
+  start (builtinRequire = require.builtinRequire || require) {
     const dependencies = this._bundleDeps(this.main.module)
-    const builtinRequire = require.builtinRequire || require
     const entrypoint = this.main.module.filename
-
     return this._run(this._run, dependencies, this.prebuilds, entrypoint, dependencies[entrypoint], this.cache, this._createRequire, builtinRequire)
   }
 
