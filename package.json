@@ -1,8 +1,12 @@
 {
   "name": "boot-drive",
   "version": "1.0.1",
-  "description": "",
+  "description": "Run an app from a Hyperdrive or Localdrive",
   "main": "index.js",
+  "files": [
+    "index.js",
+    "defaults.js"
+  ],
   "scripts": {
     "test": "standard && brittle test.js",
     "lint": "standard"
@@ -11,8 +15,8 @@
     "type": "git",
     "url": "https://github.com/holepunchto/boot-drive.git"
   },
-  "author": "",
-  "license": "MIT",
+  "author": "Holepunch",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/holepunchto/boot-drive/issues"
   },

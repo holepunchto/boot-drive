@@ -23,7 +23,7 @@ module.exports = class Boot {
 
     this.linker = new ScriptLinker({
       readFile: async (name) => {
-        if (opts.sourceOverwrites && Object.prototype.hasOwnProperty.call(opts.sourceOverwrites, name)) {
+        if (opts.sourceOverwrites && Object.hasOwn(opts.sourceOverwrites, name)) {
           return opts.sourceOverwrites[name]
         }
 
@@ -78,11 +78,16 @@ module.exports = class Boot {
   }
 
   start () {
-    const dependencies = this._bundleDeps(this.main.module)
-    const builtinRequire = require.builtinRequire || require
-    const entrypoint = this.main.module.filename
+    const boot = {
+      prebuilds: this.prebuilds,
+      dependencies: this._bundleDeps(this.main.module),
+      entrypoint: this.main.module.filename,
+      cache: this.cache,
+      createRequire: this._createRequire,
+      builtinRequire: require.builtinRequire || require
+    }
 
-    return this._run(this._run, dependencies, this.prebuilds, entrypoint, dependencies[entrypoint], this.cache, this._createRequire, builtinRequire)
+    return this._run(this._run, boot, boot.dependencies[boot.entrypoint])
   }
 
   _bundleDeps (mod) {
@@ -126,21 +131,25 @@ module.exports = class Boot {
     (function () {
       'use strict'
 
-      const prebuilds = ${JSON.stringify(this.prebuilds, null, 2)}
-      const dependencies = ${JSON.stringify(dependencies, null, 2)}
-      const entrypoint = ${JSON.stringify(this.main.module.filename)}
-      const builtinRequire = require.builtinRequire || require
+      const __BOOTDRIVE__ = {
+        prebuilds: ${JSON.stringify(this.prebuilds, null, 2)},
+        dependencies: ${JSON.stringify(dependencies, null, 2)},
+        entrypoint: ${JSON.stringify(this.main.module.filename)},
+        cache: {},
+        createRequire: __BOOTDRIVE_CREATE_REQUIRE__,
+        builtinRequire: require.builtinRequire || require
+      }
 
-      return _run(_run, dependencies, prebuilds, entrypoint, dependencies[entrypoint], {}, _createRequire, builtinRequire)
+      return __BOOTDRIVE_RUN__(__BOOTDRIVE_RUN__, __BOOTDRIVE__, __BOOTDRIVE__.dependencies[__BOOTDRIVE__.entrypoint])
 
-      function ${this._run.toString()}
+      function ${this._run.toString().replace('_run', '__BOOTDRIVE_RUN__')}
 
-      function ${this._createRequire.toString()}
+      function ${this._createRequire.toString().replace('_createRequire', '__BOOTDRIVE_CREATE_REQUIRE__')}
     })()
     `.trim()
   }
 
-  _run (run, dependencies, prebuilds, entrypoint, mod, cache, createRequire, builtinRequire) {
+  _run (run, { dependencies, prebuilds, entrypoint, cache, createRequire, builtinRequire }, mod) {
     if (cache[mod.filename]) return cache[mod.filename].exports
 
     const m = cache[mod.filename] = mod
@@ -150,7 +159,7 @@ module.exports = class Boot {
       return m.exports
     }
 
-    const require = createRequire(mod, dependencies, prebuilds, { run, entrypoint, createRequire, builtinRequire, cache })
+    const require = createRequire(run, { dependencies, prebuilds, entrypoint, cache, createRequire, builtinRequire }, mod)
     require.main = cache[entrypoint]
     require.cache = cache
     require.builtinRequire = builtinRequire
@@ -162,7 +171,7 @@ module.exports = class Boot {
     return m.exports
   }
 
-  _createRequire (mod, dependencies, prebuilds, { run, entrypoint, createRequire, builtinRequire, cache }) {
+  _createRequire (run, { dependencies, prebuilds, entrypoint, cache, createRequire, builtinRequire }, mod) {
     return function (req) {
       if (req === 'node-gyp-build') {
         return (dirname) => builtinRequire(prebuilds[dirname])
@@ -177,7 +186,7 @@ module.exports = class Boot {
       if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
 
       const dep = dependencies[r.output]
-      return run(run, dependencies, prebuilds, entrypoint, dep, cache, createRequire, builtinRequire)
+      return run(run, { dependencies, prebuilds, entrypoint, cache, createRequire, builtinRequire }, dep)
     }
   }
 }
