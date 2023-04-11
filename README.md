@@ -67,7 +67,7 @@ Runs the drive.
 
 Bundles and stringifies the dependencies and source code of the drive.
 
-Without `absolutePrebuilds` native modules has to always be in `./prebuilds/` related to the execution or source file.
+Without `absolutePrebuilds` native modules has to always be in `./prebuilds/` related to the source file.
 
 ## License
 
