@@ -140,7 +140,7 @@ module.exports = class Boot {
       'use strict'
 
       const __BOOTDRIVE__ = {
-        cwd: ${JSON.stringify(this.cwd)},
+        cwd: ${JSON.stringify(this.absolutePrebuilds ? this.cwd : null)},
         absolutePrebuilds: ${JSON.stringify(this.absolutePrebuilds)},
         prebuilds: ${JSON.stringify(this.prebuilds, null, 2)},
         dependencies: ${JSON.stringify(dependencies, null, 2)},
