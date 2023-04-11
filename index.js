@@ -154,20 +154,20 @@ module.exports = class Boot {
   }
 }
 
-function run (run, config, mod) {
-  if (config.cache[mod.filename]) return config.cache[mod.filename].exports
+function run (run, ctx, mod) {
+  if (ctx.cache[mod.filename]) return ctx.cache[mod.filename].exports
 
-  const m = config.cache[mod.filename] = mod
+  const m = ctx.cache[mod.filename] = mod
 
   if (mod.type === 'json') {
     m.exports = JSON.parse(mod.source)
     return m.exports
   }
 
-  const require = config.createRequire(run, config, mod)
-  require.main = config.cache[config.entrypoint]
-  require.cache = config.cache
-  require.builtinRequire = config.builtinRequire
+  const require = ctx.createRequire(run, ctx, mod)
+  require.main = ctx.cache[ctx.entrypoint]
+  require.cache = ctx.cache
+  require.builtinRequire = ctx.builtinRequire
 
   const source = mod.source + '\n//# sourceURL=' + mod.filename
   const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', source) // eslint-disable-line no-new-func
@@ -176,25 +176,25 @@ function run (run, config, mod) {
   return m.exports
 }
 
-function createRequire (run, config, mod) {
+function createRequire (run, ctx, mod) {
   return function (req) {
     if (req === 'node-gyp-build') {
       return function (dirname) {
-        const prebuild = config.absolutePrebuilds ? path.resolve(config.cwd, 'prebuilds', config.prebuilds[dirname]) : './prebuilds/' + config.prebuilds[dirname]
-        return config.builtinRequire(prebuild)
+        const prebuild = ctx.absolutePrebuilds ? path.resolve(ctx.cwd, 'prebuilds', ctx.prebuilds[dirname]) : './prebuilds/' + ctx.prebuilds[dirname]
+        return ctx.builtinRequire(prebuild)
       }
     }
 
     const r = mod.requires[req]
 
     if (r.isBuiltin) {
-      return config.builtinRequire(r.output)
+      return ctx.builtinRequire(r.output)
     }
 
     if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
 
-    const dep = config.dependencies[r.output]
-    return run(run, config, dep)
+    const dep = ctx.dependencies[r.output]
+    return run(run, ctx, dep)
   }
 }
 
