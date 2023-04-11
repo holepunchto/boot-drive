@@ -28,12 +28,12 @@ module.exports = class Boot {
         if (!metadata) return null
         return { ...metadata, node }
       },
-      readFile: async (name) => {
+      readFile: async (name, stat) => {
         if (opts.sourceOverwrites && Object.hasOwn(opts.sourceOverwrites, name)) {
           return opts.sourceOverwrites[name]
         }
 
-        const buffer = await this.drive.get(name)
+        const buffer = await this.drive.get(stat ? stat.node : name)
         if (!buffer) throw new Error('ENOENT: ' + name)
         return buffer
       },
