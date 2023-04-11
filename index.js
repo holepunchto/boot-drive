@@ -85,11 +85,11 @@ module.exports = class Boot {
       dependencies: this._bundleDeps(this.main.module),
       entrypoint: this.main.module.filename,
       cache: this.cache,
-      createRequire: this._createRequire,
+      createRequire,
       builtinRequire: require.builtinRequire || require
     }
 
-    return this._run(this._run, boot, boot.dependencies[boot.entrypoint])
+    return run(run, boot, boot.dependencies[boot.entrypoint])
   }
 
   _bundleDeps (mod) {
@@ -146,55 +146,55 @@ module.exports = class Boot {
 
       return __BOOTDRIVE_RUN__(__BOOTDRIVE_RUN__, __BOOTDRIVE__, __BOOTDRIVE__.dependencies[__BOOTDRIVE__.entrypoint])
 
-      function ${this._run.toString().replace('_run', '__BOOTDRIVE_RUN__')}
+      ${run.toString().replace('run', '__BOOTDRIVE_RUN__')}
 
-      function ${this._createRequire.toString().replace('_createRequire', '__BOOTDRIVE_CREATE_REQUIRE__')}
+      ${createRequire.toString().replace('createRequire', '__BOOTDRIVE_CREATE_REQUIRE__')}
     })()
     `.trim()
   }
+}
 
-  _run (run, { cwd, absolutePrebuilds, prebuilds, dependencies, entrypoint, cache, createRequire, builtinRequire }, mod) {
-    if (cache[mod.filename]) return cache[mod.filename].exports
+function run (run, ctx, mod) {
+  if (ctx.cache[mod.filename]) return ctx.cache[mod.filename].exports
 
-    const m = cache[mod.filename] = mod
+  const m = ctx.cache[mod.filename] = mod
 
-    if (mod.type === 'json') {
-      m.exports = JSON.parse(mod.source)
-      return m.exports
-    }
-
-    const require = createRequire(run, { cwd, absolutePrebuilds, prebuilds, dependencies, entrypoint, cache, createRequire, builtinRequire }, mod)
-    require.main = cache[entrypoint]
-    require.cache = cache
-    require.builtinRequire = builtinRequire
-
-    const source = mod.source + '\n//# sourceURL=' + mod.filename
-    const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', source) // eslint-disable-line no-new-func
-    wrap(require, mod.dirname, mod.filename, m, m.exports, source)
-
+  if (mod.type === 'json') {
+    m.exports = JSON.parse(mod.source)
     return m.exports
   }
 
-  _createRequire (run, { cwd, absolutePrebuilds, prebuilds, dependencies, entrypoint, cache, createRequire, builtinRequire }, mod) {
-    return function (req) {
-      if (req === 'node-gyp-build') {
-        return function (dirname) {
-          const prebuild = absolutePrebuilds ? path.resolve(cwd, 'prebuilds', prebuilds[dirname]) : './prebuilds/' + prebuilds[dirname]
-          return builtinRequire(prebuild)
-        }
+  const require = ctx.createRequire(run, ctx, mod)
+  require.main = ctx.cache[ctx.entrypoint]
+  require.cache = ctx.cache
+  require.builtinRequire = ctx.builtinRequire
+
+  const source = mod.source + '\n//# sourceURL=' + mod.filename
+  const wrap = new Function('require', '__dirname', '__filename', 'module', 'exports', source) // eslint-disable-line no-new-func
+  wrap(require, mod.dirname, mod.filename, m, m.exports, source)
+
+  return m.exports
+}
+
+function createRequire (run, ctx, mod) {
+  return function (req) {
+    if (req === 'node-gyp-build') {
+      return function (dirname) {
+        const prebuild = ctx.absolutePrebuilds ? path.resolve(ctx.cwd, 'prebuilds', ctx.prebuilds[dirname]) : './prebuilds/' + ctx.prebuilds[dirname]
+        return ctx.builtinRequire(prebuild)
       }
-
-      const r = mod.requires[req]
-
-      if (r.isBuiltin) {
-        return builtinRequire(r.output)
-      }
-
-      if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
-
-      const dep = dependencies[r.output]
-      return run(run, { cwd, absolutePrebuilds, prebuilds, dependencies, entrypoint, cache, createRequire, builtinRequire }, dep)
     }
+
+    const r = mod.requires[req]
+
+    if (r.isBuiltin) {
+      return ctx.builtinRequire(r.output)
+    }
+
+    if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
+
+    const dep = ctx.dependencies[r.output]
+    return run(run, ctx, dep)
   }
 }
 
