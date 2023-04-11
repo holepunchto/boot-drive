@@ -22,6 +22,12 @@ module.exports = class Boot {
     this.prebuilds = {}
 
     this.linker = new ScriptLinker({
+      stat: async (name) => {
+        const node = await this.drive.entry(name)
+        const metadata = node?.value?.metadata
+        if (!metadata) return null
+        return { ...metadata, node }
+      },
       readFile: async (name) => {
         if (opts.sourceOverwrites && Object.hasOwn(opts.sourceOverwrites, name)) {
           return opts.sourceOverwrites[name]
