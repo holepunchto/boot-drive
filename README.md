@@ -61,7 +61,7 @@ If it fails to find an `entrypoint` then it will use `index.js` by default.
 
 Runs the drive.
 
-`absolutePrebuilds` is always forced to be `true` by default.
+`absolutePrebuilds` is always forced to be `true` by default when using `boot.start()`.
 
 #### `const source = boot.stringify()`
 
