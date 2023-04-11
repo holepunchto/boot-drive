@@ -80,7 +80,7 @@ module.exports = class Boot {
   start () {
     const boot = {
       cwd: this.cwd,
-      absolutePrebuilds: this.absolutePrebuilds,
+      absolutePrebuilds: true,
       prebuilds: this.prebuilds,
       dependencies: this._bundleDeps(this.main.module),
       entrypoint: this.main.module.filename,
