@@ -57,7 +57,7 @@ module.exports = class Boot {
       await atomicWriteFile(filename, buffer)
     }
 
-    this.prebuilds[dirname] = this.absolutePrebuilds ? filename : './prebuilds/' + basename
+    this.prebuilds[dirname] = basename
   }
 
   async warmup () {
@@ -79,6 +79,8 @@ module.exports = class Boot {
 
   start () {
     const boot = {
+      cwd: this.cwd,
+      absolutePrebuilds: true,
       prebuilds: this.prebuilds,
       dependencies: this._bundleDeps(this.main.module),
       entrypoint: this.main.module.filename,
@@ -132,6 +134,8 @@ module.exports = class Boot {
       'use strict'
 
       const __BOOTDRIVE__ = {
+        cwd: ${JSON.stringify(this.cwd)},
+        absolutePrebuilds: ${JSON.stringify(this.absolutePrebuilds)},
         prebuilds: ${JSON.stringify(this.prebuilds, null, 2)},
         dependencies: ${JSON.stringify(dependencies, null, 2)},
         entrypoint: ${JSON.stringify(this.main.module.filename)},
@@ -149,7 +153,7 @@ module.exports = class Boot {
     `.trim()
   }
 
-  _run (run, { dependencies, prebuilds, entrypoint, cache, createRequire, builtinRequire }, mod) {
+  _run (run, { cwd, absolutePrebuilds, prebuilds, dependencies, entrypoint, cache, createRequire, builtinRequire }, mod) {
     if (cache[mod.filename]) return cache[mod.filename].exports
 
     const m = cache[mod.filename] = mod
@@ -159,7 +163,7 @@ module.exports = class Boot {
       return m.exports
     }
 
-    const require = createRequire(run, { dependencies, prebuilds, entrypoint, cache, createRequire, builtinRequire }, mod)
+    const require = createRequire(run, { cwd, absolutePrebuilds, prebuilds, dependencies, entrypoint, cache, createRequire, builtinRequire }, mod)
     require.main = cache[entrypoint]
     require.cache = cache
     require.builtinRequire = builtinRequire
@@ -171,10 +175,13 @@ module.exports = class Boot {
     return m.exports
   }
 
-  _createRequire (run, { dependencies, prebuilds, entrypoint, cache, createRequire, builtinRequire }, mod) {
+  _createRequire (run, { cwd, absolutePrebuilds, prebuilds, dependencies, entrypoint, cache, createRequire, builtinRequire }, mod) {
     return function (req) {
       if (req === 'node-gyp-build') {
-        return (dirname) => builtinRequire(prebuilds[dirname])
+        return function (dirname) {
+          const prebuild = absolutePrebuilds ? path.resolve(cwd, 'prebuilds', prebuilds[dirname]) : './prebuilds/' + prebuilds[dirname]
+          return builtinRequire(prebuild)
+        }
       }
 
       const r = mod.requires[req]
@@ -186,7 +193,7 @@ module.exports = class Boot {
       if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
 
       const dep = dependencies[r.output]
-      return run(run, { dependencies, prebuilds, entrypoint, cache, createRequire, builtinRequire }, dep)
+      return run(run, { cwd, absolutePrebuilds, prebuilds, dependencies, entrypoint, cache, createRequire, builtinRequire }, dep)
     }
   }
 }

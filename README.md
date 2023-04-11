@@ -39,15 +39,13 @@ Available `options`:
 {
   entrypoint: 'index.js', // Default main file to be run at start
   cwd: '.', // Working directory for `prebuilds/`
-  absolutePrebuilds: false, // If `true`, will use `cwd` for the prebuilds path, included on the stringified output
+  absolutePrebuilds: false, // If `true`, will use `cwd` for the stringified prebuilds path
   cache: {}, // Used at runtime for `require.cache`, you can share it between boots
   dependencies: new Map(), // Used in `warmup()`, you can share linker deps between boots
   additionalBuiltins: [], // For adding modules to be imported by Node's native `require`
   sourceOverwrites: {} // Key/Value object where you can map filenames to source code
 }
 ```
-
-Without `absolutePrebuilds` native modules has to always be in `./prebuilds/` related to the execution or source file.
 
 When running a drive, there is `require.builtinRequire` provided by the JS runtime itself.
 
@@ -63,9 +61,13 @@ If it fails to find an `entrypoint` then it will use `index.js` by default.
 
 Runs the drive.
 
+`absolutePrebuilds` is always forced to be `true` by default when using `boot.start()`.
+
 #### `const source = boot.stringify()`
 
 Bundles and stringifies the dependencies and source code of the drive.
+
+Without `absolutePrebuilds` native modules has to always be in `./prebuilds/` related to the source file.
 
 ## License
 
