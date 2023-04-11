@@ -519,8 +519,8 @@ test('error stack', async function (t) {
     const stack = error.stack.split('\n').map(v => v.trim())
 
     t.is(stack[0], 'Error: test')
-    t.is(stack[1], 'at foo (/index.js:3:29)')
-    t.is(stack[2], 'at eval (/index.js:2:5)')
+    t.is(stack[1], 'at foo (/index.js:5:29)') // => 3:29
+    t.is(stack[2], 'at eval (/index.js:4:5)') // => 2:5
   }
 
   try {
@@ -531,8 +531,8 @@ test('error stack', async function (t) {
     const stack = error.stack.split('\n').map(v => v.trim())
 
     t.is(stack[0], 'Error: test')
-    t.is(stack[1], 'at foo (/index.js:3:29)')
-    t.is(stack[2], 'at eval (/index.js:2:5)')
+    t.is(stack[1], 'at foo (/index.js:5:29)') // => 3:29
+    t.is(stack[2], 'at eval (/index.js:4:5)') // => 2:5
   }
 })
 
