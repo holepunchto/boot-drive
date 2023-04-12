@@ -26,7 +26,7 @@ test('basic', async function (t) {
 
   t.is(boot.start(), 'hello')
 
-  t.is(eval(boot.stringify()), 'hello') // eslint-disable-line no-eval
+  t.is(exec(boot.stringify()), 'hello')
 })
 
 test('entrypoint', async function (t) {
@@ -40,7 +40,7 @@ test('entrypoint', async function (t) {
 
   t.is(boot.start(), 'hello')
 
-  t.is(eval(boot.stringify()), 'hello') // eslint-disable-line no-eval
+  t.is(exec(boot.stringify()), 'hello')
 })
 
 test('entrypoint from package.json', async function (t) {
@@ -56,7 +56,7 @@ test('entrypoint from package.json', async function (t) {
 
   t.is(boot.start(), 'hello')
 
-  t.is(eval(boot.stringify()), 'hello') // eslint-disable-line no-eval
+  t.is(exec(boot.stringify()), 'hello')
 })
 
 test('no file', async function (t) {
@@ -122,7 +122,7 @@ test('dependencies', async function (t) {
   t.is(boot.dependencies.size, 1)
   t.ok(boot.dependencies.has('/index.js'))
   t.is(boot.start(), 'hello')
-  t.is(eval(boot.stringify()), 'hello') // eslint-disable-line no-eval
+  t.is(exec(boot.stringify()), 'hello')
 
   await drive.del('/index.js')
 
@@ -138,7 +138,7 @@ test('dependencies', async function (t) {
   t.is(boot3.dependencies, boot.dependencies)
   await boot3.warmup()
   t.is(boot3.start(), 'hello')
-  t.is(eval(boot3.stringify()), 'hello') // eslint-disable-line no-eval
+  t.is(exec(boot3.stringify()), 'hello')
 })
 
 test('require file within drive', async function (t) {
@@ -159,7 +159,7 @@ test('require file within drive', async function (t) {
 
   t.is(boot.start(), 'hello func: 4')
 
-  t.is(eval(boot.stringify()), 'hello func: 4') // eslint-disable-line no-eval
+  t.is(exec(boot.stringify()), 'hello func: 4')
 })
 
 test('require module with prebuilds', async function (t) {
@@ -190,7 +190,7 @@ test('require module with prebuilds', async function (t) {
 
   t.is(boot.start(), 64)
 
-  t.is(eval(boot.stringify()), 64) // eslint-disable-line no-eval
+  t.is(exec(boot.stringify()), 64)
 })
 
 test('absolute prebuilds path for stringify', async function (t) {
@@ -218,7 +218,7 @@ test('absolute prebuilds path for stringify', async function (t) {
     await boot.warmup()
 
     try {
-      eval(boot.stringify()) // eslint-disable-line no-eval
+      exec(boot.stringify())
       t.fail('should have failed')
     } catch (err) {
       t.ok(isNodeRequire(err))
@@ -229,7 +229,7 @@ test('absolute prebuilds path for stringify', async function (t) {
     const boot = new Boot(drive, { cwd: createTmpDir(t), absolutePrebuilds: true })
     await boot.warmup()
 
-    t.is(eval(boot.stringify()), 64) // eslint-disable-line no-eval
+    t.is(exec(boot.stringify()), 64)
   }
 })
 
@@ -256,7 +256,7 @@ test('additional builtins', async function (t) {
   t.is(boot.start(), 64)
 
   const source = boot.stringify()
-  t.is(eval(source), 64) // eslint-disable-line no-eval
+  t.is(exec(source), 64)
 
   {
     const boot = new Boot(drive)
@@ -270,7 +270,7 @@ test('additional builtins', async function (t) {
     }
 
     try {
-      eval(boot.stringify()) // eslint-disable-line no-eval
+      exec(boot.stringify())
       t.fail('should have failed')
     } catch (err) {
       t.ok(isBootRequire(err, 'sodium-native'))
@@ -298,7 +298,7 @@ test('additional builtin is not installed', async function (t) {
   }
 
   try {
-    eval(boot.stringify()) // eslint-disable-line no-eval
+    exec(boot.stringify())
     t.fail('should have failed')
   } catch (err) {
     t.ok(isNodeRequire(err))
@@ -322,7 +322,7 @@ test('source overwrites', async function (t) {
 
   t.is(boot.start(), 'hello')
 
-  t.is(eval(boot.stringify()), 'hello') // eslint-disable-line no-eval
+  t.is(exec(boot.stringify()), 'hello')
 })
 
 test('remote drive', async function (t) {
@@ -345,7 +345,7 @@ test('remote drive', async function (t) {
 
   t.is(boot.start(), 'hello')
 
-  t.is(eval(boot.stringify()), 'hello') // eslint-disable-line no-eval
+  t.is(exec(boot.stringify()), 'hello')
 })
 
 test('stringify with prebuilds', async function (t) {
@@ -377,7 +377,7 @@ test('stringify with prebuilds', async function (t) {
   t.is(boot.start(), 64)
 
   const source = boot.stringify()
-  t.is(eval(source), 64) // eslint-disable-line no-eval
+  t.is(exec(source), 64)
 })
 
 test('require json file', async function (t) {
@@ -397,7 +397,7 @@ test('require json file', async function (t) {
   t.alike(boot.start(), { assert: true })
 
   const source = boot.stringify()
-  t.alike(eval(source), { assert: true }) // eslint-disable-line no-eval
+  t.alike(exec(source), { assert: true })
 })
 
 test('require main property', async function (t) {
@@ -422,7 +422,7 @@ test('require main property', async function (t) {
 
   t.alike(boot.start(), main)
 
-  t.alike(eval(boot.stringify()), main) // eslint-disable-line no-eval
+  t.alike(exec(boot.stringify()), main)
 })
 
 test('cache (shallow)', async function (t) {
@@ -443,7 +443,7 @@ test('cache (shallow)', async function (t) {
   t.is(boot.start(), true)
 
   const source = boot.stringify()
-  t.is(eval(source), true) // eslint-disable-line no-eval
+  t.is(exec(source), true)
 })
 
 test('cache (internal)', async function (t) {
@@ -494,7 +494,7 @@ test('cache (internal)', async function (t) {
 
   t.alike(cache, expected)
 
-  t.alike(eval(boot.stringify()), expected) // eslint-disable-line no-eval
+  t.alike(exec(boot.stringify()), expected)
 })
 
 test('error stack', async function (t) {
@@ -525,7 +525,7 @@ test('error stack', async function (t) {
 
   try {
     const source = boot.stringify()
-    eval(source) // eslint-disable-line no-eval
+    exec(source)
     t.fail('should have failed')
   } catch (error) {
     const stack = error.stack.split('\n').map(v => v.trim())
@@ -552,7 +552,7 @@ test('exports correctly even if returns different', async function (t) {
 
   t.is(boot.start(), 'a')
 
-  t.is(eval(boot.stringify()), 'a') // eslint-disable-line no-eval
+  t.is(exec(boot.stringify()), 'a')
 })
 
 async function replicate (t, bootstrap, corestore, drive, { server = false, client = false } = {}) {
@@ -579,6 +579,12 @@ function isNodeRequire (err) {
 
 function isBootRequire (error, dependency) {
   return error.code === undefined && error.message.startsWith('Could not resolve ' + dependency)
+}
+
+function exec (src) {
+  const evaluate = new Function('require', 'module', 'exports', '__src', 'return eval(__src)') // eslint-disable-line no-new-func
+  const m = { exports: {} }
+  return evaluate(require, m, m.exports, src)
 }
 
 function createTmpDir (t) {
