@@ -177,6 +177,8 @@ function run (run, ctx, mod) {
 }
 
 function createRequire (run, ctx, mod) {
+  const path = ctx.builtinRequire('path')
+
   return function (req) {
     if (req === 'node-gyp-build') {
       return function (dirname) {
