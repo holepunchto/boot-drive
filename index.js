@@ -22,12 +22,18 @@ module.exports = class Boot {
     this.prebuilds = {}
 
     this.linker = new ScriptLinker({
-      readFile: async (name) => {
+      stat: async (name) => {
+        const node = await this.drive.entry(name)
+        const metadata = node?.value?.metadata
+        if (!metadata) return null
+        return { ...metadata, node }
+      },
+      readFile: async (name, stat) => {
         if (opts.sourceOverwrites && Object.hasOwn(opts.sourceOverwrites, name)) {
           return opts.sourceOverwrites[name]
         }
 
-        const buffer = await this.drive.get(name)
+        const buffer = await this.drive.get(stat ? stat.node : name)
         if (!buffer) throw new Error('ENOENT: ' + name)
         return buffer
       },
