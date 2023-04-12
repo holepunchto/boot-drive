@@ -1,6 +1,6 @@
 {
   "name": "boot-drive",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Run an app from a Hyperdrive or Localdrive",
   "main": "index.js",
   "files": [
