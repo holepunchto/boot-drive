@@ -10,7 +10,7 @@ npm i boot-drive
 
 First prepare the drive
 ```js
-const Boot = require('boot-drive')
+const Boot = require('@holepunchto/boot-drive')
 
 const boot = new Boot(drive)
 await boot.warmup()

@@ -1,5 +1,5 @@
 {
-  "name": "boot-drive",
+  "name": "@holepunchto/boot-drive",
   "version": "1.0.6",
   "description": "Run an app from a Hyperdrive or Localdrive",
   "main": "index.js",
@@ -23,7 +23,7 @@
   "homepage": "https://github.com/holepunchto/boot-drive",
   "dependencies": {
     "b4a": "^1.6.1",
-    "script-linker": "github:holepunchto/script-linker",
+    "@holepunchto/script-linker": "1.0.0",
     "sodium-native": "^4.0.1",
     "unix-path-resolve": "^1.0.2"
   },
