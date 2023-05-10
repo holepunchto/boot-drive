@@ -2,7 +2,7 @@
 
 const path = require('path')
 const fsp = require('fs/promises')
-const ScriptLinker = require('script-linker')
+const ScriptLinker = require('@holepunchto/script-linker')
 const sodium = require('sodium-native')
 const b4a = require('b4a')
 const unixResolve = require('unix-path-resolve')
