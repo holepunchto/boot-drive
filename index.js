@@ -34,7 +34,11 @@ module.exports = class Boot {
         }
 
         const buffer = await this.drive.get(stat ? stat.node : name)
-        if (!buffer) throw new Error('ENOENT: ' + name)
+        if (!buffer) { 
+          const err = new Error('ENOENT: ' + name)
+          err.code = 'ENOENT'
+          throw err
+        }
         return buffer
       },
       builtins: createBuiltins(opts.additionalBuiltins)
