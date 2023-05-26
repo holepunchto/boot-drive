@@ -21,8 +21,7 @@ module.exports = class Boot {
     this.absolutePrebuilds = opts.absolutePrebuilds || false
     this.prebuilds = {}
 
-    this.linker = new ScriptLinker({
-      drive,
+    this.linker = new ScriptLinker(drive, {
       sourceOverwrites: opts.sourceOverwrites,
       builtins: createBuiltins(opts.additionalBuiltins)
     })
