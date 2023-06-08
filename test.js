@@ -310,6 +310,7 @@ test('source overwrites', async function (t) {
 
   const [drive] = create()
 
+  await drive.put('/index.js', Buffer.from('module.exports = "this will be overwritten"'))
   await drive.put('/message.js', Buffer.from('module.exports = "hello"'))
 
   const boot = new Boot(drive, {
