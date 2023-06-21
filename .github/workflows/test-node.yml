@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         node-version: [lts/*]
-        os: [[self-hosted, non-ui, Linux], [self-hosted, non-ui, macOS]]
+        os: [[self-hosted, non-ui, Linux], [self-hosted, non-ui, macOS], [self-hosted, non-ui, windows]]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v3
