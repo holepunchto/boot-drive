@@ -16,7 +16,7 @@ const os = require('os')
 
 test('basic', async function (t) {
   t.plan(2)
-
+  throw new Error('I fail on purpose')
   const [drive] = create()
 
   await drive.put('/index.js', Buffer.from('module.exports = "hello"'))
