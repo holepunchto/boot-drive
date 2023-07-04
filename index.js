@@ -30,7 +30,7 @@ module.exports = class Boot {
     if (!hasBuilds) return
 
     const pkg = await mod.loadPackage()
-    const basename = pkg.name + '@' + pkg.version + '.node'
+    const basename = pkg.name.replace(/\//g, '+') + '@' + pkg.version + '.node'
     const filename = path.resolve(this.cwd, 'prebuilds', basename)
     const exists = await fileExists(filename)
     let dirname = mod.dirname
