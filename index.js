@@ -3,8 +3,6 @@
 const path = require('path')
 const fsp = require('fs/promises')
 const ScriptLinker = require('@holepunchto/script-linker')
-const sodium = require('sodium-native')
-const b4a = require('b4a')
 const unixResolve = require('unix-path-resolve')
 const { createBuiltins } = require('./defaults.js')
 
@@ -31,20 +29,22 @@ module.exports = class Boot {
     const hasBuilds = resolve(mod, 'node-gyp-build')
     if (!hasBuilds) return
 
-    let dirname = mod.dirname
-    let buffer = null
-    while (true) {
-      const entrypath = dirname + '/prebuilds/' + process.platform + '-' + process.arch + '/node.napi.node'
-      buffer = await this.drive.get(entrypath)
-      if (buffer) break
-      if (dirname === '/') return
-      dirname = unixResolve(dirname, '..')
-    }
-
-    const basename = mod.package?.name + '-' + generichash(buffer) + '.node'
+    const basename = mod.package.name + '@' + mod.package.version + '.node'
     const filename = path.resolve(this.cwd, 'prebuilds', basename)
     const exists = await fileExists(filename)
+    let dirname = mod.dirname
+
     if (!exists) {
+      let buffer = null
+
+      while (true) {
+        const entrypath = dirname + '/prebuilds/' + process.platform + '-' + process.arch + '/node.napi.node'
+        buffer = await this.drive.get(entrypath)
+        if (buffer) break
+        if (dirname === '/') return
+        dirname = unixResolve(dirname, '..')
+      }
+
       await fsp.mkdir(path.dirname(filename), { recursive: true })
       await atomicWriteFile(filename, buffer)
     }
@@ -215,10 +215,4 @@ async function fileExists (filename) {
     if (error.code === 'ENOENT') return false
   }
   return true
-}
-
-function generichash (data) {
-  const out = b4a.allocUnsafe(32)
-  sodium.crypto_generichash(out, data)
-  return out.toString('hex')
 }
