@@ -29,7 +29,8 @@ module.exports = class Boot {
     const hasBuilds = resolve(mod, 'node-gyp-build')
     if (!hasBuilds) return
 
-    const basename = mod.package.name + '@' + mod.package.version + '.node'
+    const pkg = await mod.loadPackage()
+    const basename = pkg.name + '@' + pkg.version + '.node'
     const filename = path.resolve(this.cwd, 'prebuilds', basename)
     const exists = await fileExists(filename)
     let dirname = mod.dirname
