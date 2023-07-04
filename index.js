@@ -42,8 +42,17 @@ module.exports = class Boot {
       let buffer = null
 
       while (true) {
-        const entrypath = dirname + '/prebuilds/' + this.platform + '-' + this.arch + '/node.napi.node'
-        buffer = await this.drive.get(entrypath)
+        const folder = dirname + '/prebuilds/' + this.platform + '-' + this.arch
+        let prebuild = null
+
+        for await (const name of this.drive.readdir(folder)) {
+          if (name.lastIndexOf('.bare') > -1 || name.lastIndexOf('.node') > -1) {
+            prebuild = unixResolve(folder, name)
+            break
+          }
+        }
+
+        buffer = await this.drive.get(prebuild)
         if (buffer) break
         if (dirname === '/') return
         dirname = unixResolve(dirname, '..')
