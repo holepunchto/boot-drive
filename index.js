@@ -12,7 +12,6 @@ module.exports = class Boot {
     this.cache = opts.cache || {}
 
     this.entrypoint = opts.entrypoint ? unixResolve('/', opts.entrypoint) : null
-    this.main = null
     this.dependencies = opts.dependencies || new Map()
 
     this.cwd = opts.cwd || '.'
@@ -57,31 +56,29 @@ module.exports = class Boot {
     const pkg = await this.drive.get('/package.json')
     const main = JSON.parse(pkg || '{}').main || 'index.js'
     this.entrypoint = unixResolve('/', main)
-    return this.entrypoint
   }
 
   async warmup (entrypoint) {
     if (entrypoint) this.entrypoint = unixResolve('/', entrypoint)
     else if (!this.entrypoint) await this._defaultEntrypoint()
 
-    // if (this.dependencies.has(this.entrypoint)) return
-
-    this.main = null
+    if (this.dependencies.has(this.entrypoint)) return
 
     for await (const dep of this.linker.dependencies(this.entrypoint, {}, new Set(), this.dependencies)) {
-      if (!this.main) this.main = dep
-
       await this._savePrebuildToDisk(dep.module)
     }
   }
 
   start (entrypoint) {
+    entrypoint = entrypoint ? unixResolve('/', entrypoint) : this.entrypoint
+
+    const main = this.dependencies.get(entrypoint)
     const boot = {
       cwd: this.cwd,
       absolutePrebuilds: true,
       prebuilds: this.prebuilds,
-      dependencies: this._bundleDeps(this.main.module),
-      entrypoint: unixResolve('/', entrypoint || this.entrypoint),
+      dependencies: this._bundleDeps(main),
+      entrypoint,
       cache: this.cache,
       createRequire,
       builtinRequire: require.builtinRequire || require
@@ -125,7 +122,10 @@ module.exports = class Boot {
   }
 
   stringify (entrypoint) {
-    const dependencies = this._bundleDeps(this.main.module)
+    entrypoint = entrypoint ? unixResolve('/', entrypoint) : this.entrypoint
+
+    const main = this.dependencies.get(entrypoint)
+    const dependencies = this._bundleDeps(main)
 
     return `
     (function () {
@@ -136,7 +136,7 @@ module.exports = class Boot {
         absolutePrebuilds: ${JSON.stringify(this.absolutePrebuilds)},
         prebuilds: ${JSON.stringify(this.prebuilds, null, 2)},
         dependencies: ${JSON.stringify(dependencies, null, 2)},
-        entrypoint: ${JSON.stringify(unixResolve('/', entrypoint || this.entrypoint))},
+        entrypoint: ${JSON.stringify(entrypoint)},
         cache: {},
         createRequire: __BOOTDRIVE_CREATE_REQUIRE__,
         builtinRequire: require.builtinRequire || require
