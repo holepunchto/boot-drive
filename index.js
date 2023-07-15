@@ -59,12 +59,12 @@ module.exports = class Boot {
   }
 
   async warmup (entrypoint) {
-    if (entrypoint) this.entrypoint = unixResolve('/', entrypoint)
-    else if (!this.entrypoint) this.entrypoint = await this._defaultEntrypoint()
+    if (!this.entrypoint) this.entrypoint = await this._defaultEntrypoint()
+    entrypoint = entrypoint ? unixResolve('/', entrypoint) : this.entrypoint
 
-    if (this.dependencies.has(this.entrypoint)) return
+    if (this.dependencies.has(entrypoint)) return
 
-    for await (const dep of this.linker.dependencies(this.entrypoint, {}, new Set(), this.dependencies)) {
+    for await (const dep of this.linker.dependencies(entrypoint, {}, new Set(), this.dependencies)) {
       await this._savePrebuildToDisk(dep.module)
     }
   }

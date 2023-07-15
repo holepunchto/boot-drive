@@ -47,14 +47,15 @@ test('entrypoint in warmup', async function (t) {
   t.plan(2)
 
   const [drive] = create()
-  await drive.put('/random-file.js', Buffer.from('module.exports = "hello"'))
+  await drive.put('/index.js', Buffer.from('module.exports = "world"'))
+  await drive.put('/random-file.js', Buffer.from('module.exports = "hello"; require("./index.js")'))
 
   const boot = new Boot(drive)
   await boot.warmup('random-file.js')
 
-  t.is(boot.start(), 'hello')
+  t.is(boot.start(), 'world')
 
-  t.is(exec(boot.stringify()), 'hello')
+  t.is(exec(boot.stringify()), 'world')
 })
 
 test('entrypoint in start and stringify', async function (t) {
