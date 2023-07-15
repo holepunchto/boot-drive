@@ -11,8 +11,7 @@ module.exports = class Boot {
     this.drive = drive
     this.cache = opts.cache || {}
 
-    this.entrypoint = opts.entrypoint || null
-    this.main = null
+    this.entrypoint = opts.entrypoint ? unixResolve('/', opts.entrypoint) : null
     this.dependencies = opts.dependencies || new Map()
 
     this.cwd = opts.cwd || '.'
@@ -53,30 +52,33 @@ module.exports = class Boot {
     this.prebuilds[dirname] = basename
   }
 
-  async warmup () {
-    if (!this.entrypoint) {
-      const pkg = await this.drive.get('/package.json')
-      this.entrypoint = JSON.parse(pkg || '{}').main
-      if (!this.entrypoint) this.entrypoint = 'index.js'
-    }
-    this.entrypoint = unixResolve('/', this.entrypoint)
+  async _defaultEntrypoint () {
+    const pkg = await this.drive.get('/package.json')
+    const main = JSON.parse(pkg || '{}').main || 'index.js'
+    return unixResolve('/', main)
+  }
 
-    this.main = null
+  async warmup (entrypoint) {
+    if (!this.entrypoint) this.entrypoint = await this._defaultEntrypoint()
+    entrypoint = entrypoint ? unixResolve('/', entrypoint) : this.entrypoint
 
-    for await (const dep of this.linker.dependencies(this.entrypoint, {}, new Set(), this.dependencies)) {
-      if (!this.main) this.main = dep
+    if (this.dependencies.has(entrypoint)) return
 
+    for await (const dep of this.linker.dependencies(entrypoint, {}, new Set(), this.dependencies)) {
       await this._savePrebuildToDisk(dep.module)
     }
   }
 
-  start () {
+  start (entrypoint) {
+    entrypoint = entrypoint ? unixResolve('/', entrypoint) : this.entrypoint
+
+    const main = this.dependencies.get(entrypoint)
     const boot = {
       cwd: this.cwd,
       absolutePrebuilds: true,
       prebuilds: this.prebuilds,
-      dependencies: this._bundleDeps(this.main.module),
-      entrypoint: this.main.module.filename,
+      dependencies: this._bundleDeps(main),
+      entrypoint,
       cache: this.cache,
       createRequire,
       builtinRequire: require.builtinRequire || require
@@ -119,8 +121,11 @@ module.exports = class Boot {
     return dependencies
   }
 
-  stringify () {
-    const dependencies = this._bundleDeps(this.main.module)
+  stringify (entrypoint) {
+    entrypoint = entrypoint ? unixResolve('/', entrypoint) : this.entrypoint
+
+    const main = this.dependencies.get(entrypoint)
+    const dependencies = this._bundleDeps(main)
 
     return `
     (function () {
@@ -131,7 +136,7 @@ module.exports = class Boot {
         absolutePrebuilds: ${JSON.stringify(this.absolutePrebuilds)},
         prebuilds: ${JSON.stringify(this.prebuilds, null, 2)},
         dependencies: ${JSON.stringify(dependencies, null, 2)},
-        entrypoint: ${JSON.stringify(this.main.module.filename)},
+        entrypoint: ${JSON.stringify(entrypoint)},
         cache: {},
         createRequire: __BOOTDRIVE_CREATE_REQUIRE__,
         builtinRequire: require.builtinRequire || require

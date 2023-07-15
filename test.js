@@ -29,7 +29,7 @@ test('basic', async function (t) {
   t.is(exec(boot.stringify()), 'hello')
 })
 
-test('entrypoint', async function (t) {
+test('entrypoint in constructor', async function (t) {
   t.plan(2)
 
   const [drive] = create()
@@ -41,6 +41,36 @@ test('entrypoint', async function (t) {
   t.is(boot.start(), 'hello')
 
   t.is(exec(boot.stringify()), 'hello')
+})
+
+test('entrypoint in warmup', async function (t) {
+  t.plan(2)
+
+  const [drive] = create()
+  await drive.put('/index.js', Buffer.from('module.exports = "world"'))
+  await drive.put('/random-file.js', Buffer.from('module.exports = "hello"; require("./index.js")'))
+
+  const boot = new Boot(drive)
+  await boot.warmup('random-file.js')
+
+  t.is(boot.start(), 'world')
+
+  t.is(exec(boot.stringify()), 'world')
+})
+
+test('entrypoint in start and stringify', async function (t) {
+  t.plan(2)
+
+  const [drive] = create()
+  await drive.put('/index.js', Buffer.from('require("./random-file.js")'))
+  await drive.put('/random-file.js', Buffer.from('module.exports = "hello"'))
+
+  const boot = new Boot(drive)
+  await boot.warmup()
+
+  t.is(boot.start('random-file.js'), 'hello')
+
+  t.is(exec(boot.stringify('random-file.js')), 'hello')
 })
 
 test('entrypoint from package.json', async function (t) {
