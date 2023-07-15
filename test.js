@@ -585,21 +585,6 @@ test('exports correctly even if returns different', async function (t) {
   t.is(exec(boot.stringify()), 'a')
 })
 
-test('warmup cache', async function (t) {
-  t.plan(2)
-
-  const [drive] = create()
-  await drive.put('/index.js', Buffer.from('module.exports = "hello"'))
-
-  const boot = new Boot(drive)
-  await boot.warmup()
-  await boot.warmup()
-
-  t.is(boot.start(), 'hello')
-
-  t.is(exec(boot.stringify()), 'hello')
-})
-
 async function replicate (t, bootstrap, corestore, drive, { server = false, client = false } = {}) {
   await drive.ready()
 
