@@ -11,7 +11,7 @@ module.exports = class Boot {
     this.drive = drive
     this.cache = opts.cache || {}
 
-    this.entrypoint = opts.entrypoint || null
+    this.entrypoint = opts.entrypoint ? unixResolve('/', opts.entrypoint) : null
     this.main = null
     this.dependencies = opts.dependencies || new Map()
 
@@ -53,13 +53,18 @@ module.exports = class Boot {
     this.prebuilds[dirname] = basename
   }
 
-  async warmup () {
-    if (!this.entrypoint) {
-      const pkg = await this.drive.get('/package.json')
-      this.entrypoint = JSON.parse(pkg || '{}').main
-      if (!this.entrypoint) this.entrypoint = 'index.js'
-    }
-    this.entrypoint = unixResolve('/', this.entrypoint)
+  async _defaultEntrypoint () {
+    const pkg = await this.drive.get('/package.json')
+    const main = JSON.parse(pkg || '{}').main || 'index.js'
+    this.entrypoint = unixResolve('/', main)
+    return this.entrypoint
+  }
+
+  async warmup (entrypoint) {
+    if (entrypoint) this.entrypoint = unixResolve('/', entrypoint)
+    else if (!this.entrypoint) await this._defaultEntrypoint()
+
+    // if (this.dependencies.has(this.entrypoint)) return
 
     this.main = null
 
@@ -70,13 +75,13 @@ module.exports = class Boot {
     }
   }
 
-  start () {
+  start (entrypoint) {
     const boot = {
       cwd: this.cwd,
       absolutePrebuilds: true,
       prebuilds: this.prebuilds,
       dependencies: this._bundleDeps(this.main.module),
-      entrypoint: this.main.module.filename,
+      entrypoint: unixResolve('/', entrypoint || this.entrypoint),
       cache: this.cache,
       createRequire,
       builtinRequire: require.builtinRequire || require
@@ -119,7 +124,7 @@ module.exports = class Boot {
     return dependencies
   }
 
-  stringify () {
+  stringify (entrypoint) {
     const dependencies = this._bundleDeps(this.main.module)
 
     return `
@@ -131,7 +136,7 @@ module.exports = class Boot {
         absolutePrebuilds: ${JSON.stringify(this.absolutePrebuilds)},
         prebuilds: ${JSON.stringify(this.prebuilds, null, 2)},
         dependencies: ${JSON.stringify(dependencies, null, 2)},
-        entrypoint: ${JSON.stringify(this.main.module.filename)},
+        entrypoint: ${JSON.stringify(unixResolve('/', entrypoint || this.entrypoint))},
         cache: {},
         createRequire: __BOOTDRIVE_CREATE_REQUIRE__,
         builtinRequire: require.builtinRequire || require

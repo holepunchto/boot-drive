@@ -37,7 +37,7 @@ Creates a bootloader to run the drive.
 Available `options`:
 ```js
 {
-  entrypoint: 'index.js', // Default main file to be run at start
+  entrypoint: 'index.js', // Main file to be run at start
   cwd: '.', // Working directory for `prebuilds/`
   absolutePrebuilds: false, // If `true`, will use `cwd` for the stringified prebuilds path
   cache: {}, // Used at runtime for `require.cache`, you can share it between boots
@@ -49,7 +49,7 @@ Available `options`:
 
 When running a drive, there is `require.builtinRequire` provided by the JS runtime itself.
 
-#### `await boot.warmup()`
+#### `await boot.warmup([entrypoint])`
 
 Prepares the drive.
 
@@ -57,13 +57,13 @@ If `entrypoint` is not set, then it will try `/package.json` `main` property.
 
 If it fails to find an `entrypoint` then it will use `index.js` by default.
 
-#### `const exports = boot.start()`
+#### `const exports = boot.start([entrypoint])`
 
 Runs the drive.
 
 `absolutePrebuilds` is always forced to be `true` by default when using `boot.start()`.
 
-#### `const source = boot.stringify()`
+#### `const source = boot.stringify([entrypoint])`
 
 Bundles and stringifies the dependencies and source code of the drive.
 
