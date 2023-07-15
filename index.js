@@ -56,11 +56,12 @@ module.exports = class Boot {
     const pkg = await this.drive.get('/package.json')
     const main = JSON.parse(pkg || '{}').main || 'index.js'
     this.entrypoint = unixResolve('/', main)
+    return this.entrypoint
   }
 
   async warmup (entrypoint) {
     if (entrypoint) this.entrypoint = unixResolve('/', entrypoint)
-    else if (!this.entrypoint) await this._defaultEntrypoint()
+    else if (!this.entrypoint) this.entrypoint = await this._defaultEntrypoint()
 
     if (this.dependencies.has(this.entrypoint)) return
 
