@@ -17,6 +17,7 @@ module.exports = class Boot {
     this.cwd = opts.cwd || '.'
     this.absolutePrebuilds = opts.absolutePrebuilds || false
     this.prebuilds = {}
+    this.forceWarmup = !!opts.dependencies
 
     this.linker = new ScriptLinker(drive, {
       sourceOverwrites: opts.sourceOverwrites,
@@ -62,7 +63,7 @@ module.exports = class Boot {
     if (!this.entrypoint) this.entrypoint = await this._defaultEntrypoint()
     entrypoint = entrypoint ? unixResolve('/', entrypoint) : this.entrypoint
 
-    if (this.dependencies.has(entrypoint)) return
+    if (this.forceWarmup === false && this.dependencies.has(entrypoint)) return
 
     for await (const dep of this.linker.dependencies(entrypoint, {}, new Set(), this.dependencies)) {
       await this._savePrebuildToDisk(dep.module)
