@@ -43,7 +43,9 @@ Available `options`:
   cache: {}, // Used at runtime for `require.cache`, you can share it between boots
   dependencies: new Map(), // Used in `warmup()`, you can share linker deps between boots
   additionalBuiltins: [], // For adding modules to be imported by Node's native `require`
-  sourceOverwrites: {} // Key/Value object where you can map filenames to source code
+  sourceOverwrites: {}, // Key/Value object where you can map filenames to source code
+  platform: process.platform, // Used for the prebuilds sub-folder
+  arch: process.arch // Used for the prebuilds sub-folder
 }
 ```
 
