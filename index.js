@@ -24,8 +24,8 @@ module.exports = class Boot {
       builtins: createBuiltins(opts.additionalBuiltins)
     })
 
-    this._platform = opts.platform || process.platform
-    this._arch = opts.arch || process.arch
+    this.platform = opts.platform || process.platform
+    this.arch = opts.arch || process.arch
   }
 
   async _savePrebuildToDisk (mod) {
@@ -42,7 +42,7 @@ module.exports = class Boot {
       let buffer = null
 
       while (true) {
-        const entrypath = dirname + '/prebuilds/' + this._platform + '-' + this._arch + '/node.napi.node'
+        const entrypath = dirname + '/prebuilds/' + this.platform + '-' + this.arch + '/node.napi.node'
         buffer = await this.drive.get(entrypath)
         if (buffer) break
         if (dirname === '/') return
