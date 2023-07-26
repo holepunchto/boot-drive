@@ -44,15 +44,20 @@ module.exports = class Boot {
       while (true) {
         const folder = dirname + '/prebuilds/' + this.platform + '-' + this.arch
         let prebuild = null
+        let prebuildNode = null
 
         for await (const name of this.drive.readdir(folder)) {
-          if (name.lastIndexOf('.bare') > -1 || name.lastIndexOf('.node') > -1) {
+          if (name.endsWith('.bare')) {
             prebuild = unixResolve(folder, name)
             break
           }
+
+          if (name.endsWith('.node')) {
+            prebuildNode = unixResolve(folder, name)
+          }
         }
 
-        buffer = await this.drive.get(prebuild)
+        buffer = await this.drive.get(prebuild || prebuildNode)
         if (buffer) break
         if (dirname === '/') return
         dirname = unixResolve(dirname, '..')
