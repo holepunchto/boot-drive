@@ -52,7 +52,7 @@ module.exports = class Boot {
             break
           }
 
-          if (name.endsWith('.node')) {
+          if (!prebuildNode && name.endsWith('.node')) {
             prebuildNode = unixResolve(folder, name)
           }
         }
