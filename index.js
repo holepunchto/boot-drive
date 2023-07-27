@@ -36,12 +36,10 @@ module.exports = class Boot {
 
     const pkg = await mod.loadPackage()
     const runtime = this._isNode ? 'node' : 'bare'
-    const basename = pkg.name.replace(/\//g, '+') + '@' + pkg.version + '.' + runtime
-    const filename = path.resolve(this.cwd, 'prebuilds', basename)
-    const exists = await fileExists(filename)
+    let current = await getCurrentPrebuild(pkg, this.cwd, runtime)
     let dirname = mod.dirname
 
-    if (!exists) {
+    if (!current) {
       let buffer = null
 
       while (true) {
@@ -49,17 +47,20 @@ module.exports = class Boot {
         const prebuild = await findPrebuild(this.drive, folder, runtime)
 
         buffer = await this.drive.get(prebuild)
-        if (buffer) break
+        if (buffer) {
+          current = prebuildFile(pkg, this.cwd, path.extname(prebuild))
+          break
+        }
 
         if (dirname === '/') return
         dirname = unixResolve(dirname, '..')
       }
 
-      await fsp.mkdir(path.dirname(filename), { recursive: true })
-      await atomicWriteFile(filename, buffer)
+      await fsp.mkdir(path.dirname(current.filename), { recursive: true })
+      await atomicWriteFile(current.filename, buffer)
     }
 
-    this.prebuilds[dirname] = basename
+    this.prebuilds[dirname] = current.basename
   }
 
   async _defaultEntrypoint () {
@@ -231,6 +232,25 @@ async function fileExists (filename) {
     if (error.code === 'ENOENT') return false
   }
   return true
+}
+
+function prebuildFile (pkg, cwd, extension) {
+  const basename = pkg.name.replace(/\//g, '+') + '@' + pkg.version + '.' + extension
+  const filename = path.resolve(cwd, 'prebuilds', basename)
+  return { basename, filename }
+}
+
+async function getCurrentPrebuild (pkg, cwd, runtime) {
+  const extensions = runtime === 'node' ? ['node'] : ['bare', 'node']
+
+  for (const extension of extensions) {
+    const current = prebuildFile(pkg, cwd, extension)
+
+    const exists = await fileExists(current.filename)
+    if (exists) return current
+  }
+
+  return null
 }
 
 async function findPrebuild (drive, folder, runtime) {
