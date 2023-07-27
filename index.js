@@ -243,6 +243,7 @@ async function findPrebuild (drive, folder, runtime) {
 
     if (prebuildNode === null && name.endsWith('.node')) {
       prebuildNode = unixResolve(folder, name)
+      if (runtime === 'node') return prebuildNode
     }
   }
 
