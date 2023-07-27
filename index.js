@@ -26,6 +26,8 @@ module.exports = class Boot {
 
     this.platform = opts.platform || process.platform
     this.arch = opts.arch || process.arch
+
+    this._isNode = opts.isNode !== undefined ? opts.isNode : !!process.versions.node
   }
 
   async _savePrebuildToDisk (mod) {
@@ -33,32 +35,29 @@ module.exports = class Boot {
     if (!hasBuilds) return
 
     const pkg = await mod.loadPackage()
-    const basename = pkg.name.replace(/\//g, '+') + '@' + pkg.version + '.node'
+    const extension = this._isNode ? 'node' : 'bare'
+    const basename = pkg.name.replace(/\//g, '+') + '@' + pkg.version + '.' + extension
     const filename = path.resolve(this.cwd, 'prebuilds', basename)
     const exists = await fileExists(filename)
     let dirname = mod.dirname
 
     if (!exists) {
+      let prebuild = null
       let buffer = null
 
       while (true) {
         const folder = dirname + '/prebuilds/' + this.platform + '-' + this.arch
-        let prebuild = null
-        let prebuildNode = null
 
         for await (const name of this.drive.readdir(folder)) {
-          if (name.endsWith('.bare')) {
+          if (name.endsWith('.' + extension)) {
             prebuild = unixResolve(folder, name)
             break
           }
-
-          if (!prebuildNode && name.endsWith('.node')) {
-            prebuildNode = unixResolve(folder, name)
-          }
         }
 
-        buffer = await this.drive.get(prebuild || prebuildNode)
+        buffer = await this.drive.get(prebuild)
         if (buffer) break
+
         if (dirname === '/') return
         dirname = unixResolve(dirname, '..')
       }
