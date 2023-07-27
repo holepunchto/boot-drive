@@ -47,13 +47,7 @@ module.exports = class Boot {
 
       while (true) {
         const folder = dirname + '/prebuilds/' + this.platform + '-' + this.arch
-
-        for await (const name of this.drive.readdir(folder)) {
-          if (name.endsWith('.' + extension)) {
-            prebuild = unixResolve(folder, name)
-            break
-          }
-        }
+        const prebuild = await findPrebuild(this.drive, folder)
 
         buffer = await this.drive.get(prebuild)
         if (buffer) break
@@ -238,4 +232,20 @@ async function fileExists (filename) {
     if (error.code === 'ENOENT') return false
   }
   return true
+}
+
+async function findPrebuild (drive, folder) {
+  let prebuildNode = null
+
+  for await (const name of drive.readdir(folder)) {
+    if (name.endsWith('.bare')) {
+      return unixResolve(folder, name)
+    }
+
+    if (prebuildNode === null && name.endsWith('.node')) {
+      prebuildNode = unixResolve(folder, name)
+    }
+  }
+
+  return prebuildNode
 }
