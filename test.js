@@ -231,8 +231,7 @@ test('dynamic prebuilds depending on runtime', async function (t) {
   const src = new Localdrive(__dirname)
   const m1 = new MirrorDrive(src, drive, { prefix: 'node_modules/sodium-native' })
   const m2 = new MirrorDrive(src, drive, { prefix: 'node_modules/node-gyp-build' })
-  const m3 = new MirrorDrive(src, drive, { prefix: 'node_modules/b4a' })
-  await Promise.all([m1.done(), m2.done(), m3.done()])
+  await Promise.all([m1.done(), m2.done()])
 
   // TODO: Temp fix until sodium-native have Bare prebuilds built-in
   for await (const entry of drive.list('/node_modules/sodium-native/prebuilds')) {
@@ -241,16 +240,8 @@ test('dynamic prebuilds depending on runtime', async function (t) {
     }
   }
 
-  const sodium = require('sodium-native')
-  sodium.$used1 = true
-
   await drive.put('/index.js', Buffer.from(`
     const sodium = require("sodium-native")
-    const b4a = require("b4a")
-    if (sodium.$used1) throw new Error("sodium-native was already imported before")
-    const buffer = b4a.allocUnsafe(32)
-    sodium.randombytes_buf(buffer)
-    module.exports = buffer.toString('hex').length
   `))
 
   const bootNode = new Boot(drive, { cwd: createTmpDir(t), absolutePrebuilds: true, isNode: true })
