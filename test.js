@@ -586,6 +586,35 @@ test('exports correctly even if returns different', async function (t) {
   t.is(exec(boot.stringify()), 'a')
 })
 
+test.solo('recursive importing', async function (t) {
+  t.plan(2)
+
+  const [drive] = create()
+
+  await drive.put('/index.js', Buffer.from(`module.exports = require('./a.js')`))
+
+  await drive.put('/a.js', Buffer.from(`
+    const b = require('./b.js')
+    module.exports = 'hello'
+  `))
+
+  await drive.put('/b.js', Buffer.from(`
+    const a = require('./a.js')
+    module.exports = 'world'
+  `))
+
+  const boot = new Boot(drive)
+
+  console.log('a')
+
+  await boot.warmup()
+
+  console.log('b')
+  t.is(boot.start(), 'hello')
+
+  t.is(exec(boot.stringify()), 'hello')
+})
+
 async function replicate (t, bootstrap, corestore, drive, { server = false, client = false } = {}) {
   await drive.ready()
 

@@ -116,9 +116,15 @@ module.exports = class Boot {
           continue
         }
 
+        const dependency = this.dependencies.get(r.output)
+
+        console.log([r.input, r.output, dependency.filename, dependency.resolutions])
+
+        if (r.output === dependency.filename) throw new Error('Circular dependency: ' + r.input)
+
         dep.requires[r.input] = { output: r.output }
 
-        stack.push(this.dependencies.get(r.output))
+        stack.push(dependency)
       }
     }
 
