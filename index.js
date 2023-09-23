@@ -27,7 +27,7 @@ module.exports = class Boot {
     this.platform = opts.platform || process.platform
     this.arch = opts.arch || process.arch
 
-    this._isNode = opts.isNode !== undefined ? opts.isNode : !!process.versions.node
+    this._isNode = typeof opts.isNode === 'boolean' ? opts.isNode : !!process.versions.node
   }
 
   async _savePrebuildToDisk (mod) {
@@ -35,32 +35,46 @@ module.exports = class Boot {
     if (!hasBuilds) return
 
     const pkg = await mod.loadPackage()
-    const runtime = this._isNode ? 'node' : 'bare'
-    let current = await getCurrentPrebuild(pkg, this.cwd, runtime)
-    let dirname = mod.dirname
+    const prebuilds = { node: null, bare: null }
 
-    if (!current) {
-      let buffer = null
+    for (const extension of ['node', 'bare']) {
+      const basename = pkg.name.replace(/\//g, '+') + '@' + pkg.version + '.' + extension
+      const filename = path.resolve(this.cwd, 'prebuilds', basename)
+      let dirname = mod.dirname
+
+      const exists = await fileExists(filename)
+      if (exists) {
+        prebuilds[extension] = { dirname, basename }
+        continue
+      }
 
       while (true) {
         const folder = dirname + '/prebuilds/' + this.platform + '-' + this.arch
-        const prebuild = await findPrebuild(this.drive, folder, runtime)
 
-        buffer = await this.drive.get(prebuild)
-        if (buffer) {
-          current = prebuildFile(pkg, this.cwd, path.extname(prebuild))
+        for await (const name of this.drive.readdir(folder)) {
+          if (!name.endsWith('.' + extension)) continue
+
+          const buffer = await this.drive.get(unixResolve(folder, name))
+
+          await fsp.mkdir(path.dirname(filename), { recursive: true })
+          await atomicWriteFile(filename, buffer)
+
+          prebuilds[extension] = { dirname, basename }
+
           break
         }
 
-        if (dirname === '/') return
+        if (prebuilds[extension]) break
+
+        if (dirname === '/') break
         dirname = unixResolve(dirname, '..')
       }
-
-      await fsp.mkdir(path.dirname(current.filename), { recursive: true })
-      await atomicWriteFile(current.filename, buffer)
     }
 
-    this.prebuilds[dirname] = current.basename
+    const prebuild = this._isNode ? prebuilds.node : (prebuilds.bare || prebuilds.node)
+    if (prebuild) {
+      this.prebuilds[prebuild.dirname] = prebuild.basename
+    }
   }
 
   async _defaultEntrypoint () {
@@ -232,40 +246,4 @@ async function fileExists (filename) {
     if (error.code === 'ENOENT') return false
   }
   return true
-}
-
-function prebuildFile (pkg, cwd, extension) {
-  const basename = pkg.name.replace(/\//g, '+') + '@' + pkg.version + '.' + extension
-  const filename = path.resolve(cwd, 'prebuilds', basename)
-  return { basename, filename }
-}
-
-async function getCurrentPrebuild (pkg, cwd, runtime) {
-  const extensions = runtime === 'node' ? ['node'] : ['bare', 'node']
-
-  for (const extension of extensions) {
-    const current = prebuildFile(pkg, cwd, extension)
-
-    const exists = await fileExists(current.filename)
-    if (exists) return current
-  }
-
-  return null
-}
-
-async function findPrebuild (drive, folder, runtime) {
-  let prebuildNode = null
-
-  for await (const name of drive.readdir(folder)) {
-    if (runtime === 'bare' && name.endsWith('.bare')) {
-      return unixResolve(folder, name)
-    }
-
-    if (prebuildNode === null && name.endsWith('.node')) {
-      prebuildNode = unixResolve(folder, name)
-      if (runtime === 'node') return prebuildNode
-    }
-  }
-
-  return prebuildNode
 }
