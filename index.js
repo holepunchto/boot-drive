@@ -26,6 +26,8 @@ module.exports = class Boot {
 
     this.platform = opts.platform || process.platform
     this.arch = opts.arch || process.arch
+
+    this._isNode = typeof opts.isNode === 'boolean' ? opts.isNode : !!process.versions.node
   }
 
   async _savePrebuildToDisk (mod) {
@@ -33,27 +35,46 @@ module.exports = class Boot {
     if (!hasBuilds) return
 
     const pkg = await mod.loadPackage()
-    const basename = pkg.name.replace(/\//g, '+') + '@' + pkg.version + '.node'
-    const filename = path.resolve(this.cwd, 'prebuilds', basename)
-    const exists = await fileExists(filename)
-    let dirname = mod.dirname
+    const prebuilds = { node: null, bare: null }
 
-    if (!exists) {
-      let buffer = null
+    for (const extension of ['node', 'bare']) {
+      const basename = pkg.name.replace(/\//g, '+') + '@' + pkg.version + '.' + extension
+      const filename = path.resolve(this.cwd, 'prebuilds', basename)
+      let dirname = mod.dirname
 
-      while (true) {
-        const entrypath = dirname + '/prebuilds/' + this.platform + '-' + this.arch + '/node.napi.node'
-        buffer = await this.drive.get(entrypath)
-        if (buffer) break
-        if (dirname === '/') return
-        dirname = unixResolve(dirname, '..')
+      const exists = await fileExists(filename)
+      if (exists) {
+        prebuilds[extension] = { dirname, basename }
+        continue
       }
 
-      await fsp.mkdir(path.dirname(filename), { recursive: true })
-      await atomicWriteFile(filename, buffer)
+      while (true) {
+        const folder = dirname + '/prebuilds/' + this.platform + '-' + this.arch
+
+        for await (const name of this.drive.readdir(folder)) {
+          if (!name.endsWith('.' + extension)) continue
+
+          const buffer = await this.drive.get(unixResolve(folder, name))
+
+          await fsp.mkdir(path.dirname(filename), { recursive: true })
+          await atomicWriteFile(filename, buffer)
+
+          prebuilds[extension] = { dirname, basename }
+
+          break
+        }
+
+        if (prebuilds[extension]) break
+
+        if (dirname === '/') break
+        dirname = unixResolve(dirname, '..')
+      }
     }
 
-    this.prebuilds[dirname] = basename
+    const prebuild = this._isNode ? prebuilds.node : (prebuilds.bare || prebuilds.node)
+    if (prebuild) {
+      this.prebuilds[prebuild.dirname] = prebuild.basename
+    }
   }
 
   async _defaultEntrypoint () {
