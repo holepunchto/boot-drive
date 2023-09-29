@@ -47,31 +47,26 @@ module.exports = class Boot {
 
     const prebuilds = { node: null, bare: null }
     let dirname = mod.dirname
-    let done = false
 
     while (true) {
       const folder = dirname + '/prebuilds/' + this.platform + '-' + this.arch
 
       for await (const name of this.drive.readdir(folder)) {
-        if (done) continue // Equivalent to breaking the loop due warmup of blocks
+        const type = getPrebuildType(name)
+        if (prebuilds[type]) continue
 
-        const extension = name.split('.').pop()
-        if (prebuilds[extension]) continue
-
-        if (extension === 'node' || extension === 'bare') {
-          const info = this._prebuildInfo(pkg, extension)
+        if (type === 'node' || type === 'bare') {
+          const info = this._prebuildInfo(pkg, type)
 
           await this._saveLocalPrebuild(unixResolve(folder, name), info.filename)
 
-          prebuilds[extension] = { dirname, basename: info.basename }
+          prebuilds[type] = { dirname, basename: info.basename }
         }
+
+        // Don't break the loop due warmup of blocks
       }
 
-      if (prebuilds.node || prebuilds.bare) {
-        done = true
-      }
-
-      if (dirname === '/') break
+      if (dirname === '/' || prebuilds.node || prebuilds.bare) break
       dirname = unixResolve(dirname, '..')
     }
 
@@ -271,4 +266,10 @@ async function fileExists (filename) {
     if (error.code === 'ENOENT') return false
   }
   return true
+}
+
+function getPrebuildType (filename) {
+  if (filename.endsWith('.bare')) return 'bare'
+  if (filename.endsWith('.node')) return 'node'
+  return null
 }
