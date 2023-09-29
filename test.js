@@ -743,7 +743,7 @@ test('exports correctly even if returns different', async function (t) {
 })
 
 test('second warmup uses local prebuilds', async function (t) {
-  t.plan(2)
+  t.plan(4)
 
   const [drive] = create()
 
@@ -761,15 +761,26 @@ test('second warmup uses local prebuilds', async function (t) {
     module.exports = buffer.toString('hex').length
   `))
 
-  const boot = new Boot(drive, { cwd: createTmpDir(t), absolutePrebuilds: true })
+  // Passing dependencies allows to force the second warmup
+  const boot = new Boot(drive, { cwd: createTmpDir(t), absolutePrebuilds: true, dependencies: new Map() })
   await boot.warmup()
 
-  const boot2 = new Boot(drive, { cwd: boot.cwd, absolutePrebuilds: true, entrypoint: '/index.js' })
-  const tmp = boot2.drive
+  const tmp = boot.drive
+  boot.drive = null // Hack to make sure it uses the local prebuilds otherwise warmup will throw
+  await boot.warmup()
+  boot.drive = tmp
 
-  boot2.drive = null // Hack to make sure it uses the local prebuilds otherwise warmup will throw
+  t.is(boot.start(), 64)
+
+  t.is(exec(boot.stringify()), 64)
+
+  // Set entrypoint to avoid querying the drive
+  const boot2 = new Boot(drive, { cwd: boot.cwd, absolutePrebuilds: true, entrypoint: '/index.js' })
+
+  const tmp2 = boot2.drive
+  boot2.drive = null
   await boot2.warmup()
-  boot2.drive = tmp
+  boot2.drive = tmp2
 
   t.is(boot2.start(), 64)
 
