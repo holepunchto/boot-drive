@@ -53,7 +53,7 @@ module.exports = class Boot {
 
       for await (const name of this.drive.readdir(folder)) {
         const type = getPrebuildType(name)
-        if (prebuilds[type]) continue
+        if (prebuilds[type]) continue // First one wins
 
         if (type === 'node' || type === 'bare') {
           const info = this._prebuildInfo(pkg, type)
@@ -63,7 +63,7 @@ module.exports = class Boot {
           prebuilds[type] = { dirname, basename: info.basename }
         }
 
-        // Don't break the loop due warmup of blocks
+        // Avoid breaking the loop in case we want the state for future local queries
       }
 
       if (dirname === '/' || prebuilds.node || prebuilds.bare) break
