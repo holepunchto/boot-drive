@@ -742,6 +742,40 @@ test('exports correctly even if returns different', async function (t) {
   t.is(exec(boot.stringify()), 'a')
 })
 
+test('second warmup uses local prebuilds', async function (t) {
+  t.plan(2)
+
+  const [drive] = create()
+
+  const src = new Localdrive(__dirname)
+  const m1 = new MirrorDrive(src, drive, { prefix: 'node_modules/sodium-native' })
+  const m2 = new MirrorDrive(src, drive, { prefix: 'node_modules/node-gyp-build' })
+  const m3 = new MirrorDrive(src, drive, { prefix: 'node_modules/b4a' })
+  await Promise.all([m1.done(), m2.done(), m3.done()])
+
+  await drive.put('/index.js', Buffer.from(`
+    const sodium = require("sodium-native")
+    const b4a = require("b4a")
+    const buffer = b4a.allocUnsafe(32)
+    sodium.randombytes_buf(buffer)
+    module.exports = buffer.toString('hex').length
+  `))
+
+  const boot = new Boot(drive, { cwd: createTmpDir(t), absolutePrebuilds: true })
+  await boot.warmup()
+
+  const boot2 = new Boot(drive, { cwd: boot.cwd, absolutePrebuilds: true, entrypoint: '/index.js' })
+  const tmp = boot2.drive
+
+  boot2.drive = null // Hack to make sure it uses the local prebuilds otherwise warmup will throw
+  await boot2.warmup()
+  boot2.drive = tmp
+
+  t.is(boot2.start(), 64)
+
+  t.is(exec(boot2.stringify()), 64)
+})
+
 async function replicate (t, bootstrap, corestore, drive, { server = false, client = false } = {}) {
   await drive.ready()
 
