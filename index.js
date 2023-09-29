@@ -34,47 +34,67 @@ module.exports = class Boot {
     const hasBuilds = resolve(mod, 'node-gyp-build')
     if (!hasBuilds) return
 
+    const runtime = this._isNode ? 'node' : 'bare'
     const pkg = await mod.loadPackage()
+
+    let prebuild = await this._getLocalPrebuild(pkg, runtime)
+    if (!prebuild && runtime === 'bare') prebuild = await this._getLocalPrebuild(pkg, 'node')
+
+    if (prebuild) {
+      this.prebuilds[mod.dirname] = prebuild.basename
+      return
+    }
+
     const prebuilds = { node: null, bare: null }
+    let dirname = mod.dirname
 
-    for (const extension of ['node', 'bare']) {
-      const basename = pkg.name.replace(/\//g, '+') + '@' + pkg.version + '.' + extension
-      const filename = path.resolve(this.cwd, 'prebuilds', basename)
-      let dirname = mod.dirname
+    while (true) {
+      const folder = dirname + '/prebuilds/' + this.platform + '-' + this.arch
 
-      const exists = await fileExists(filename)
-      if (exists) {
-        prebuilds[extension] = { dirname, basename }
-        continue
-      }
+      for await (const name of this.drive.readdir(folder)) {
+        const type = getPrebuildType(name)
+        if (prebuilds[type]) continue // First one wins
 
-      while (true) {
-        const folder = dirname + '/prebuilds/' + this.platform + '-' + this.arch
+        if (type === 'node' || type === 'bare') {
+          const info = this._prebuildInfo(pkg, type)
 
-        for await (const name of this.drive.readdir(folder)) {
-          if (!name.endsWith('.' + extension)) continue
+          await this._saveLocalPrebuild(unixResolve(folder, name), info.filename)
 
-          const buffer = await this.drive.get(unixResolve(folder, name))
-
-          await fsp.mkdir(path.dirname(filename), { recursive: true })
-          await atomicWriteFile(filename, buffer)
-
-          prebuilds[extension] = { dirname, basename }
-
-          break
+          prebuilds[type] = { dirname, basename: info.basename }
         }
 
-        if (prebuilds[extension]) break
-
-        if (dirname === '/') break
-        dirname = unixResolve(dirname, '..')
+        // Avoid breaking the loop in case we want the state for future local queries
       }
+
+      if (dirname === '/' || prebuilds.node || prebuilds.bare) break
+      dirname = unixResolve(dirname, '..')
     }
 
-    const prebuild = this._isNode ? prebuilds.node : (prebuilds.bare || prebuilds.node)
-    if (prebuild) {
-      this.prebuilds[prebuild.dirname] = prebuild.basename
+    const saved = this._isNode ? prebuilds.node : (prebuilds.bare || prebuilds.node)
+    if (saved) {
+      this.prebuilds[saved.dirname] = saved.basename
     }
+  }
+
+  _prebuildInfo (pkg, extension) {
+    const basename = pkg.name.replace(/\//g, '+') + '@' + pkg.version + '.' + extension
+    const filename = path.resolve(this.cwd, 'prebuilds', basename)
+    return { basename, filename }
+  }
+
+  async _getLocalPrebuild (pkg, extension) {
+    const info = this._prebuildInfo(pkg, extension)
+    const exists = await fileExists(info.filename)
+    return exists ? info : null
+  }
+
+  async _saveLocalPrebuild (key, filename) {
+    const exists = await fileExists(filename)
+    if (exists) return
+
+    const buffer = await this.drive.get(key)
+    await fsp.mkdir(path.dirname(filename), { recursive: true })
+    await atomicWriteFile(filename, buffer)
   }
 
   async _defaultEntrypoint () {
@@ -246,4 +266,10 @@ async function fileExists (filename) {
     if (error.code === 'ENOENT') return false
   }
   return true
+}
+
+function getPrebuildType (filename) {
+  if (filename.endsWith('.bare')) return 'bare'
+  if (filename.endsWith('.node')) return 'node'
+  return null
 }
