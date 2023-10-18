@@ -34,7 +34,7 @@ module.exports = class Boot {
     if (mod.builtin) return
     const dir = mod.linker.drive.readdir(mod.dirname + '/prebuilds')[Symbol.asyncIterator]()
     const hasBuilds = (await dir.next()).done === false
-    dir.return()
+    dir.destroy()
     if (!hasBuilds) return
     const runtime = this._isNode ? 'node' : 'bare'
     const pkg = await mod.loadPackage()
@@ -233,7 +233,7 @@ function createRequire (run, ctx, mod) {
     const r = mod.requires[req]
 
     if (r.isBuiltin) {
-      return ctx.builtinRequire(r.output)
+      return ctx.builtinRequire(process.versions.bare && req === 'addon' ? req : r.output)
     }
 
     if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
