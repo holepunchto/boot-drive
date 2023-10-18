@@ -32,9 +32,9 @@ module.exports = class Boot {
 
   async _savePrebuildToDisk (mod) {
     if (mod.builtin) return
-    const dir = mod.linker.drive.readdir(mod.dirname + '/prebuilds')
+    const dir = mod.linker.drive.readdir(mod.dirname + '/prebuilds')[Symbol.asyncIterator]()
     const hasBuilds = (await dir.next()).done === false
-    dir.return() // one file is enough, end the iterable
+    dir.return()
     if (!hasBuilds) return
     const runtime = this._isNode ? 'node' : 'bare'
     const pkg = await mod.loadPackage()
