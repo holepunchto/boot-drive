@@ -31,9 +31,10 @@ module.exports = class Boot {
   }
 
   async _savePrebuildToDisk (mod) {
-    const hasBuilds = resolve(mod, 'node-gyp-build')
+    const dir = mod.linker.drive.readdir(mod.dirname + '/prebuilds')
+    const hasBuilds = (await dir.next()).done === false
+    dir.return() // one file is enough, end the iterable
     if (!hasBuilds) return
-
     const runtime = this._isNode ? 'node' : 'bare'
     const pkg = await mod.loadPackage()
 
@@ -241,16 +242,6 @@ function createRequire (run, ctx, mod) {
     const dep = ctx.dependencies[r.output]
     return run(run, ctx, dep)
   }
-}
-
-function resolve (mod, input) {
-  for (const r of mod.resolutions) {
-    if (r.input === input) {
-      if (!r.output) break
-      return r.output
-    }
-  }
-  return null
 }
 
 async function atomicWriteFile (filename, buffer) {
