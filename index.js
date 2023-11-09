@@ -238,7 +238,7 @@ function createRequire (run, ctx, mod) {
     const r = mod.requires[req]
 
     if (r.isBuiltin) {
-      return ctx.builtinRequire(ctx.builtinsMap === null ? r.output : (ctx.builtinsMap[r.output] || r.output))
+      return ctx.builtinRequire(ctx.builtinsMap === null ? r.output : (Object.hasOwn(ctx.builtinsMap, req) ? ctx.builtinsMap[req] : r.output))
     }
 
     if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
