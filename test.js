@@ -742,7 +742,7 @@ test('exports correctly even if returns different', async function (t) {
   t.is(exec(boot.stringify()), 'a')
 })
 
-test('coremap', async function (t) {
+test('builtinsMap', async function (t) {
   t.plan(2)
 
   const [drive] = create()
@@ -764,9 +764,7 @@ test('coremap', async function (t) {
     return req.apply(this, arguments)
   }
 
-  await drive.put('/package.json', Buffer.from('{ "pear": { "coremap": { "bare": { "fs": "bare-fs" } } } }'))
-
-  const boot = new Boot(drive)
+  const boot = new Boot(drive, { builtinsMap: { fs: 'bare-fs' } })
   await boot.warmup()
 
   t.alike(boot.start(), { assert: true })

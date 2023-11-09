@@ -20,8 +20,13 @@ module.exports = class Boot {
     this.forceWarmup = !!opts.dependencies
     this.sourceOverwrites = opts.sourceOverwrites
     this.additionalBuiltins = opts.additionalBuiltins
-    this.linker = null
-    this.coremap = null
+    this.builtinsMap = opts.builtinsMap || null
+    this.linker = new ScriptLinker(this.drive, {
+      sourceOverwrites: this.sourceOverwrites,
+      builtins: createBuiltins(this.additionalBuiltins),
+      resolveMap: this.builtinsMap === null ? null : (req) => this.builtinsMap[req]
+    })
+
     this.platform = opts.platform || process.platform
     this.arch = opts.arch || process.arch
 
@@ -96,18 +101,15 @@ module.exports = class Boot {
     await atomicWriteFile(filename, buffer)
   }
 
+  async _defaultEntrypoint () {
+    const pkg = await this.drive.get('/package.json')
+    const main = JSON.parse(pkg || '{}').main || 'index.js'
+    return unixResolve('/', main)
+  }
+
   async warmup (entrypoint) {
-    const pkg = JSON.parse(await this.drive.get('/package.json') || '{}')
-    this.coremap = process.versions.bare ? (pkg.pear?.coremap?.bare || null) : null // pear-specific / bare-specific feature
-    this.linker = this.linker || new ScriptLinker(this.drive, {
-      sourceOverwrites: this.sourceOverwrites,
-      builtins: createBuiltins(this.additionalBuiltins),
-      resolveMap: this.coremap ? (req) => this.coremap[req] : null
-    })
-
-    if (!this.entrypoint) this.entrypoint = unixResolve('/', pkg.main || 'index.js')
+    if (!this.entrypoint) this.entrypoint = await this._defaultEntrypoint()
     entrypoint = entrypoint ? unixResolve('/', entrypoint) : this.entrypoint
-
     if (this.forceWarmup === false && this.dependencies.has(entrypoint)) return
     for await (const dep of this.linker.dependencies(entrypoint, {}, new Set(), this.dependencies)) {
       await this._savePrebuildToDisk(dep.module)
@@ -115,7 +117,6 @@ module.exports = class Boot {
   }
 
   start (entrypoint) {
-    if (this.linker === null) throw new Error('Prepare the drive with warmup')
     entrypoint = entrypoint ? unixResolve('/', entrypoint) : this.entrypoint
 
     const main = this.dependencies.get(entrypoint)
@@ -124,7 +125,7 @@ module.exports = class Boot {
       absolutePrebuilds: true,
       prebuilds: this.prebuilds,
       dependencies: this._bundleDeps(main),
-      coremap: this.coremap,
+      builtinsMap: this.builtinsMap,
       entrypoint,
       cache: this.cache,
       createRequire,
@@ -183,7 +184,7 @@ module.exports = class Boot {
         absolutePrebuilds: ${JSON.stringify(this.absolutePrebuilds)},
         prebuilds: ${JSON.stringify(this.prebuilds, null, 2)},
         dependencies: ${JSON.stringify(dependencies, null, 2)},
-        coremap: ${JSON.stringify(this.coremap, null, 2)},
+        builtinsMap: ${JSON.stringify(this.builtinsMap, null, 2)},
         entrypoint: ${JSON.stringify(entrypoint)},
         cache: {},
         createRequire: __BOOTDRIVE_CREATE_REQUIRE__,
@@ -237,7 +238,7 @@ function createRequire (run, ctx, mod) {
     const r = mod.requires[req]
 
     if (r.isBuiltin) {
-      return ctx.builtinRequire(ctx.coremap === null ? r.output : (ctx.coremap[r.output] || r.output))
+      return ctx.builtinRequire(ctx.builtinsMap === null ? r.output : (ctx.builtinsMap[r.output] || r.output))
     }
 
     if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
