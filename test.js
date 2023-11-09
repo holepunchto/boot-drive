@@ -742,15 +742,15 @@ test('exports correctly even if returns different', async function (t) {
   t.is(exec(boot.stringify()), 'a')
 })
 
-test('builtinsMap', async function (t) {
-  t.plan(2)
+test.solo('builtinsMap', async function (t) {
+  t.plan(3)
 
   const [drive] = create()
-
-  await drive.put('/index.js', Buffer.from(`
-    const fs = require('fs')
-    module.exports = fs
-  `))
+  const entry = `
+  const fs = require('fs')
+  module.exports = fs
+`
+  await drive.put('/index.js', Buffer.from(entry))
 
   if (!process.versions.bare) { // pear and bare-only feature
     t.teardown(() => { delete process.version.bare })
@@ -770,6 +770,9 @@ test('builtinsMap', async function (t) {
   t.alike(boot.start(), { assert: true })
 
   const source = boot.stringify()
+
+  t.is(JSON.parse('{' + source.match(/"source":(.+)",$/m)[0].slice(0, -1) + '}').source, entry)
+
   t.alike(exec(source), { assert: true })
 })
 
