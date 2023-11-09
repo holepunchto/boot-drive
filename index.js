@@ -24,7 +24,7 @@ module.exports = class Boot {
     this.linker = new ScriptLinker(this.drive, {
       sourceOverwrites: this.sourceOverwrites,
       builtins: createBuiltins(this.additionalBuiltins),
-      resolveMap: this.builtinsMap === null ? null : (req) => Object.hasOwn(this.builtinsMap, req) ? this.builtinsMap[req] : undefined
+      resolveMap: this.builtinsMap === null ? null : (req) => Object.hasOwn(this.builtinsMap, req) ? this.builtinsMap[req] : null
     })
 
     this.platform = opts.platform || process.platform
