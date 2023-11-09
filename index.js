@@ -18,11 +18,9 @@ module.exports = class Boot {
     this.absolutePrebuilds = opts.absolutePrebuilds || false
     this.prebuilds = {}
     this.forceWarmup = !!opts.dependencies
-
-    this.linker = new ScriptLinker(drive, {
-      sourceOverwrites: opts.sourceOverwrites,
-      builtins: createBuiltins(opts.additionalBuiltins)
-    })
+    this.sourceOverwrites = opts.sourceOverwrites
+    this.additionalBuiltins = opts.additionalBuiltins
+    this.linker = null
 
     this.platform = opts.platform || process.platform
     this.arch = opts.arch || process.arch
@@ -98,14 +96,22 @@ module.exports = class Boot {
     await atomicWriteFile(filename, buffer)
   }
 
-  async _defaultEntrypoint () {
-    const pkg = await this.drive.get('/package.json')
-    const main = JSON.parse(pkg || '{}').main || 'index.js'
-    return unixResolve('/', main)
-  }
-
   async warmup (entrypoint) {
-    if (!this.entrypoint) this.entrypoint = await this._defaultEntrypoint()
+    const pkg = JSON.parse(await this.drive.get('/package.json') || '{}')
+
+    let resolveMap = null
+    if (process.versions.bare) {
+      const codemap = pkg.pear?.codemap?.bare // pear-specific feature
+      resolveMap = (req) => codemap[req]
+    }
+
+    this.linker = this.linker || new ScriptLinker(this.drive, {
+      sourceOverwrites: this.sourceOverwrites,
+      builtins: createBuiltins(this.additionalBuiltins),
+      resolveMap
+    })
+
+    if (!this.entrypoint) this.entrypoint = unixResolve('/', pkg.main || 'index.js')
     entrypoint = entrypoint ? unixResolve('/', entrypoint) : this.entrypoint
 
     if (this.forceWarmup === false && this.dependencies.has(entrypoint)) return
@@ -115,6 +121,7 @@ module.exports = class Boot {
   }
 
   start (entrypoint) {
+    if (this.linker === null) throw new Error('Prepare the drive with warmup')
     entrypoint = entrypoint ? unixResolve('/', entrypoint) : this.entrypoint
 
     const main = this.dependencies.get(entrypoint)
