@@ -21,7 +21,7 @@ module.exports = class Boot {
     this.sourceOverwrites = opts.sourceOverwrites
     this.additionalBuiltins = opts.additionalBuiltins
     this.linker = null
-
+    this.coremap = null
     this.platform = opts.platform || process.platform
     this.arch = opts.arch || process.arch
 
@@ -98,13 +98,11 @@ module.exports = class Boot {
 
   async warmup (entrypoint) {
     const pkg = JSON.parse(await this.drive.get('/package.json') || '{}')
-
+    this.coremap = process.versions.bare ? (pkg.pear?.coremap?.bare || null) : null // pear-specific / bare-specific feature
     this.linker = this.linker || new ScriptLinker(this.drive, {
       sourceOverwrites: this.sourceOverwrites,
       builtins: createBuiltins(this.additionalBuiltins),
-      resolveMap: process.versions.bare && pkg.pear?.codemap?.bare
-        ? (req) => pkg.pear.codemap.bare[req] // pear-specific feature
-        : null
+      resolveMap: this.coremap ? (req) => this.coremap[req] : null
     })
 
     if (!this.entrypoint) this.entrypoint = unixResolve('/', pkg.main || 'index.js')
@@ -126,6 +124,7 @@ module.exports = class Boot {
       absolutePrebuilds: true,
       prebuilds: this.prebuilds,
       dependencies: this._bundleDeps(main),
+      coremap: this.coremap,
       entrypoint,
       cache: this.cache,
       createRequire,
@@ -184,6 +183,7 @@ module.exports = class Boot {
         absolutePrebuilds: ${JSON.stringify(this.absolutePrebuilds)},
         prebuilds: ${JSON.stringify(this.prebuilds, null, 2)},
         dependencies: ${JSON.stringify(dependencies, null, 2)},
+        coremap: ${JSON.stringify(this.coremap, null, 2)},
         entrypoint: ${JSON.stringify(entrypoint)},
         cache: {},
         createRequire: __BOOTDRIVE_CREATE_REQUIRE__,
@@ -232,11 +232,12 @@ function createRequire (run, ctx, mod) {
         return ctx.builtinRequire(prebuild)
       }
     }
+    if (req === 'addon' && process.versions.bare) return ctx.builtinRequire(req)
 
     const r = mod.requires[req]
 
     if (r.isBuiltin) {
-      return ctx.builtinRequire(process.versions.bare && req === 'addon' ? req : r.output)
+      return ctx.builtinRequire(ctx.coremap === null ? r.output : (ctx.coremap[r.output] || r.output))
     }
 
     if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)
