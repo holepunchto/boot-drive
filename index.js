@@ -99,16 +99,12 @@ module.exports = class Boot {
   async warmup (entrypoint) {
     const pkg = JSON.parse(await this.drive.get('/package.json') || '{}')
 
-    let resolveMap = null
-    if (process.versions.bare) {
-      const codemap = pkg.pear?.codemap?.bare // pear-specific feature
-      resolveMap = (req) => codemap[req]
-    }
-
     this.linker = this.linker || new ScriptLinker(this.drive, {
       sourceOverwrites: this.sourceOverwrites,
       builtins: createBuiltins(this.additionalBuiltins),
-      resolveMap
+      resolveMap: process.versions.bare && pkg.pear?.codemap?.bare
+        ? (req) => pkg.pear.codemap.bare[req] // pear-specific feature
+        : null
     })
 
     if (!this.entrypoint) this.entrypoint = unixResolve('/', pkg.main || 'index.js')
