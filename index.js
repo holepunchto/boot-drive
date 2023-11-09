@@ -18,10 +18,13 @@ module.exports = class Boot {
     this.absolutePrebuilds = opts.absolutePrebuilds || false
     this.prebuilds = {}
     this.forceWarmup = !!opts.dependencies
-
-    this.linker = new ScriptLinker(drive, {
-      sourceOverwrites: opts.sourceOverwrites,
-      builtins: createBuiltins(opts.additionalBuiltins)
+    this.sourceOverwrites = opts.sourceOverwrites || null
+    this.additionalBuiltins = opts.additionalBuiltins || []
+    this.builtinsMap = opts.builtinsMap || null
+    this.linker = new ScriptLinker(this.drive, {
+      sourceOverwrites: this.sourceOverwrites,
+      builtins: createBuiltins(this.additionalBuiltins),
+      resolveMap: this.builtinsMap === null ? null : (req) => Object.hasOwn(this.builtinsMap, req) ? this.builtinsMap[req] : null
     })
 
     this.platform = opts.platform || process.platform
@@ -107,7 +110,6 @@ module.exports = class Boot {
   async warmup (entrypoint) {
     if (!this.entrypoint) this.entrypoint = await this._defaultEntrypoint()
     entrypoint = entrypoint ? unixResolve('/', entrypoint) : this.entrypoint
-
     if (this.forceWarmup === false && this.dependencies.has(entrypoint)) return
     for await (const dep of this.linker.dependencies(entrypoint, {}, new Set(), this.dependencies)) {
       await this._savePrebuildToDisk(dep.module)
@@ -123,6 +125,7 @@ module.exports = class Boot {
       absolutePrebuilds: true,
       prebuilds: this.prebuilds,
       dependencies: this._bundleDeps(main),
+      builtinsMap: this.builtinsMap,
       entrypoint,
       cache: this.cache,
       createRequire,
@@ -181,6 +184,7 @@ module.exports = class Boot {
         absolutePrebuilds: ${JSON.stringify(this.absolutePrebuilds)},
         prebuilds: ${JSON.stringify(this.prebuilds, null, 2)},
         dependencies: ${JSON.stringify(dependencies, null, 2)},
+        builtinsMap: ${JSON.stringify(this.builtinsMap, null, 2)},
         entrypoint: ${JSON.stringify(entrypoint)},
         cache: {},
         createRequire: __BOOTDRIVE_CREATE_REQUIRE__,
@@ -229,11 +233,12 @@ function createRequire (run, ctx, mod) {
         return ctx.builtinRequire(prebuild)
       }
     }
+    if (req === 'addon' && process.versions.bare) return ctx.builtinRequire(req)
 
     const r = mod.requires[req]
 
     if (r.isBuiltin) {
-      return ctx.builtinRequire(process.versions.bare && req === 'addon' ? req : r.output)
+      return ctx.builtinRequire(ctx.builtinsMap === null ? r.output : (Object.hasOwn(ctx.builtinsMap, req) ? ctx.builtinsMap[req] : r.output))
     }
 
     if (!r.output) throw new Error('Could not resolve ' + req + ' from ' + mod.dirname)

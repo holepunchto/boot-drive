@@ -742,6 +742,40 @@ test('exports correctly even if returns different', async function (t) {
   t.is(exec(boot.stringify()), 'a')
 })
 
+test.solo('builtinsMap', async function (t) {
+  t.plan(3)
+
+  const [drive] = create()
+  const entry = `
+  const fs = require('fs')
+  module.exports = fs
+`
+  await drive.put('/index.js', Buffer.from(entry))
+
+  if (!process.versions.bare) { // pear and bare-only feature
+    t.teardown(() => { delete process.version.bare })
+    process.versions.bare = '1.0.0'
+  }
+  const Module = require('module')
+  const req = Module.prototype.require
+  t.teardown(() => { Module.prototype.require = req })
+  Module.prototype.require = function (name) {
+    if (name === 'bare-fs') return { assert: true }
+    return req.apply(this, arguments)
+  }
+
+  const boot = new Boot(drive, { builtinsMap: { fs: 'bare-fs' } })
+  await boot.warmup()
+
+  t.alike(boot.start(), { assert: true })
+
+  const source = boot.stringify()
+
+  t.is(JSON.parse('{' + source.match(/"source":(.+)",$/m)[0].slice(0, -1) + '}').source, entry)
+
+  t.alike(exec(source), { assert: true })
+})
+
 async function replicate (t, bootstrap, corestore, drive, { server = false, client = false } = {}) {
   await drive.ready()
 
