@@ -18,13 +18,13 @@ module.exports = class Boot {
     this.absolutePrebuilds = opts.absolutePrebuilds || false
     this.prebuilds = {}
     this.forceWarmup = !!opts.dependencies
-    this.sourceOverwrites = opts.sourceOverwrites
-    this.additionalBuiltins = opts.additionalBuiltins
+    this.sourceOverwrites = opts.sourceOverwrites || null
+    this.additionalBuiltins = opts.additionalBuiltins || []
     this.builtinsMap = opts.builtinsMap || null
     this.linker = new ScriptLinker(this.drive, {
       sourceOverwrites: this.sourceOverwrites,
       builtins: createBuiltins(this.additionalBuiltins),
-      resolveMap: this.builtinsMap === null ? null : (req) => this.builtinsMap[req]
+      resolveMap: this.builtinsMap === null ? null : (req) => Object.hasOwn(this.builtinsMap, req) ? this.builtinsMap[req] : undefined
     })
 
     this.platform = opts.platform || process.platform
