@@ -34,13 +34,12 @@ module.exports = class Boot {
   }
 
   async _savePrebuildToDisk (mod) {
-    if (mod.builtin) return
-    const dir = mod.linker.drive.readdir(mod.dirname + '/prebuilds')[Symbol.asyncIterator]()
-    const hasBuilds = (await dir.next()).done === false
-    await dir.return()
+    const hasBuilds = resolve(mod, 'node-gyp-build')
     if (!hasBuilds) return
+
     const runtime = this._isNode ? 'node' : 'bare'
     const pkg = await mod.loadPackage()
+
     let prebuild = await this._getLocalPrebuild(pkg, runtime)
     if (!prebuild && runtime === 'bare') prebuild = await this._getLocalPrebuild(pkg, 'node')
 
@@ -110,7 +109,9 @@ module.exports = class Boot {
   async warmup (entrypoint) {
     if (!this.entrypoint) this.entrypoint = await this._defaultEntrypoint()
     entrypoint = entrypoint ? unixResolve('/', entrypoint) : this.entrypoint
+
     if (this.forceWarmup === false && this.dependencies.has(entrypoint)) return
+
     for await (const dep of this.linker.dependencies(entrypoint, {}, new Set(), this.dependencies)) {
       await this._savePrebuildToDisk(dep.module)
     }
@@ -246,6 +247,16 @@ function createRequire (run, ctx, mod) {
     const dep = ctx.dependencies[r.output]
     return run(run, ctx, dep)
   }
+}
+
+function resolve (mod, input) {
+  for (const r of mod.resolutions) {
+    if (r.input === input) {
+      if (!r.output) break
+      return r.output
+    }
+  }
+  return null
 }
 
 async function atomicWriteFile (filename, buffer) {
