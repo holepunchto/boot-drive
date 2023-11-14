@@ -742,7 +742,7 @@ test('exports correctly even if returns different', async function (t) {
   t.is(exec(boot.stringify()), 'a')
 })
 
-test.solo('builtinsMap', async function (t) {
+test('builtinsMap', async function (t) {
   t.plan(3)
 
   const [drive] = create()
