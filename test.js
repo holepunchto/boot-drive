@@ -1,5 +1,4 @@
 'use strict'
-
 const test = require('brittle')
 const Boot = require('./index.js')
 const RAM = require('random-access-memory')
@@ -192,7 +191,7 @@ test('require file within drive', async function (t) {
   t.is(exec(boot.stringify()), 'hello func: 4')
 })
 
-test('require module with prebuilds', async function (t) {
+test('require module with node prebuilds', async function (t) {
   t.plan(2)
 
   const [drive] = create()
@@ -213,6 +212,35 @@ test('require module with prebuilds', async function (t) {
     const buffer = b4a.allocUnsafe(32)
     sodium.randombytes_buf(buffer)
     module.exports = buffer.toString('hex').length
+  `))
+
+  const boot = new Boot(drive, { cwd: createTmpDir(t), absolutePrebuilds: true })
+  await boot.warmup()
+
+  t.is(boot.start(), 64)
+
+  t.is(exec(boot.stringify()), 64)
+})
+
+test('require module with bare prebuilds', async function (t) {
+  t.plan(2)
+
+  const [drive] = create()
+
+  const src = new Localdrive(__dirname)
+  const m1 = new MirrorDrive(src, drive, { prefix: 'node_modules/bare-env' })
+  await Promise.all([m1.done()])
+
+  process.env.__BOOTDRIVE_TEST__ = 64
+
+  await drive.put('/index.js', Buffer.from(`
+    if (process.versions.bare) {
+      const env = require("bare-env")
+      module.exports = env.__BOOTDRIVE_TEST__
+    } else {
+      module.exports = 64 // just pass if node is running tests
+    }
+    
   `))
 
   const boot = new Boot(drive, { cwd: createTmpDir(t), absolutePrebuilds: true })

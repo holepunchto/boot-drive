@@ -26,6 +26,7 @@
     "unix-path-resolve": "^1.0.2"
   },
   "devDependencies": {
+    "bare-env": "^2.0.0",
     "brittle": "^3.1.0",
     "corestore": "^6.2.0",
     "hyperdht": "^6.6.0",

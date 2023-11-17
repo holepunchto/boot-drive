@@ -1,5 +1,4 @@
 'use strict'
-
 const path = require('path')
 const fsp = require('fs/promises')
 const ScriptLinker = require('@holepunchto/script-linker')
@@ -30,19 +29,16 @@ module.exports = class Boot {
     this.platform = opts.platform || process.platform
     this.arch = opts.arch || process.arch
 
-    this._isNode = typeof opts.isNode === 'boolean' ? opts.isNode : !!process.versions.node
+    this._isNode = typeof opts.isNode === 'boolean' ? opts.isNode : (process.versions.node && !process.versions.bare)
   }
 
   async _savePrebuildToDisk (mod) {
-    const hasBuilds = resolve(mod, 'node-gyp-build')
-    if (!hasBuilds) return
+    const pkg = await mod.loadPackage()
+    if (!pkg?.prebuild && !resolve(mod, 'node-gyp-build')) return
 
     const runtime = this._isNode ? 'node' : 'bare'
-    const pkg = await mod.loadPackage()
 
-    let prebuild = await this._getLocalPrebuild(pkg, runtime)
-    if (!prebuild && runtime === 'bare') prebuild = await this._getLocalPrebuild(pkg, 'node')
-
+    const prebuild = await this._getLocalPrebuild(pkg, runtime)
     if (prebuild) {
       this.prebuilds[mod.dirname] = prebuild.basename
       return
@@ -85,8 +81,8 @@ module.exports = class Boot {
     return { basename, filename }
   }
 
-  async _getLocalPrebuild (pkg, extension) {
-    const info = this._prebuildInfo(pkg, extension)
+  async _getLocalPrebuild (pkg) {
+    const info = this._prebuildInfo(pkg, 'bare') || this._prebuildInfo(pkg, 'node')
     const exists = await fileExists(info.filename)
     return exists ? info : null
   }
@@ -228,14 +224,13 @@ function run (run, ctx, mod) {
 function createRequire (run, ctx, mod) {
   const path = ctx.builtinRequire('path')
 
-  return function (req) {
+  const require = function (req) {
     if (req === 'node-gyp-build') {
       return function (dirname) {
         const prebuild = ctx.absolutePrebuilds ? path.resolve(ctx.cwd, 'prebuilds', ctx.prebuilds[dirname]) : './prebuilds/' + ctx.prebuilds[dirname]
         return ctx.builtinRequire(prebuild)
       }
     }
-    if (req === 'addon' && process.versions.bare) return ctx.builtinRequire(req)
 
     const r = mod.requires[req]
 
@@ -248,6 +243,12 @@ function createRequire (run, ctx, mod) {
     const dep = ctx.dependencies[r.output]
     return run(run, ctx, dep)
   }
+
+  require.addon = (name) => {
+    return ctx.builtinRequire.addon(name)
+  }
+
+  return require
 }
 
 function resolve (mod, input) {
