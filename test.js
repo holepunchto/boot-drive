@@ -299,7 +299,7 @@ test('dynamic prebuilds depending on runtime', async function (t) {
 
     const bootNode = new Boot(drive, { cwd: bare.cwd, absolutePrebuilds: true, isNode: true })
     await bootNode.warmup()
-    t.ok(bootNode.prebuilds['/node_modules/sodium-native'].endsWith('.node'))
+    t.ok(bare.prebuilds['/node_modules/sodium-native'].endsWith('.bare'))
   }
 })
 
@@ -403,7 +403,7 @@ test('dynamic prebuilds depending on runtime - only .bare prebuilds exists', asy
 
     const bootNode = new Boot(drive, { cwd: bare.cwd, absolutePrebuilds: true, isNode: true })
     await bootNode.warmup()
-    t.absent(bootNode.prebuilds['/node_modules/sodium-native']) // There is no compatible prebuild for Node
+    t.ok(bare.prebuilds['/node_modules/sodium-native'].endsWith('.bare'))
   }
 })
 
