@@ -34,7 +34,8 @@ module.exports = class Boot {
 
   async _savePrebuildToDisk (mod) {
     const pkg = await mod.loadPackage()
-    if (!pkg?.prebuild && !resolve(mod, 'node-gyp-build')) return
+    const hasBuilds = (Array.isArray(pkg?.files) && pkg.files.includes('prebuilds')) || !!resolve(mod, 'node-gyp-build')
+    if (!hasBuilds) return
 
     const runtime = this._isNode ? 'node' : 'bare'
 
