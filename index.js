@@ -78,7 +78,7 @@ module.exports = class Boot {
 
   _prebuildInfo (pkg, extension) {
     const basename = pkg.name.replace(/\//g, '+') + '@' + pkg.version + '.' + extension
-    const filename = path.resolve(this.cwd, 'prebuilds', basename)
+    const filename = path.resolve(this.cwd, 'prebuilds', process.platform + '-' + process.arch, basename)
     return { basename, filename }
   }
 
