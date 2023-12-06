@@ -152,7 +152,7 @@ module.exports = class Boot {
         if (r.input === null || r.input === 'node-gyp-build') continue
 
         const isBuiltin = this.linker.builtins.has(r.input)
-
+        
         if (isBuiltin || !r.output) {
           dep.requires[r.input] = { output: r.output, isBuiltin }
           continue
@@ -228,7 +228,8 @@ function createRequire (run, ctx, mod) {
   const require = function (req) {
     if (req === 'node-gyp-build') {
       return function (dirname) {
-        const prebuild = ctx.absolutePrebuilds ? path.resolve(ctx.cwd, 'prebuilds', ctx.prebuilds[dirname]) : './prebuilds/' + ctx.prebuilds[dirname]
+        const platarch = process.platform + '-' + process.arch
+        const prebuild = ctx.absolutePrebuilds ? path.resolve(ctx.cwd, 'prebuilds', platarch, ctx.prebuilds[dirname]) : './prebuilds/' + platarch + '/' + ctx.prebuilds[dirname]
         return ctx.builtinRequire(prebuild)
       }
     }
