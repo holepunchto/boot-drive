@@ -13,6 +13,8 @@ const fsp = require('fs/promises')
 const path = require('path')
 const os = require('os')
 
+const PLATARCH = process.platform + '-' + process.arch
+
 test('basic', async function (t) {
   t.plan(2)
 
@@ -278,10 +280,9 @@ test('dynamic prebuilds depending on runtime', async function (t) {
     const node = new Boot(drive, { cwd: createTmpDir(t), absolutePrebuilds: true, isNode: true })
     await node.warmup()
     t.ok(node.prebuilds['/node_modules/sodium-native'].endsWith('.node'))
-
     const local = new Localdrive(node.cwd)
-    t.ok(await local.entry('/prebuilds/sodium-native@' + pkg.version + '.node'))
-    t.ok(await local.entry('/prebuilds/sodium-native@' + pkg.version + '.bare'))
+    t.ok(await local.entry('/prebuilds/' + PLATARCH + '/sodium-native@' + pkg.version + '.node'))
+    t.ok(await local.entry('/prebuilds/' + PLATARCH + '/sodium-native@' + pkg.version + '.bare'))
 
     const bootBare = new Boot(drive, { cwd: node.cwd, absolutePrebuilds: true, isNode: false })
     await bootBare.warmup()
@@ -294,8 +295,8 @@ test('dynamic prebuilds depending on runtime', async function (t) {
     t.ok(bare.prebuilds['/node_modules/sodium-native'].endsWith('.bare'))
 
     const local = new Localdrive(bare.cwd)
-    t.ok(await local.entry('/prebuilds/sodium-native@' + pkg.version + '.node'))
-    t.ok(await local.entry('/prebuilds/sodium-native@' + pkg.version + '.bare'))
+    t.ok(await local.entry('/prebuilds/' + PLATARCH + '/sodium-native@' + pkg.version + '.node'))
+    t.ok(await local.entry('/prebuilds/' + PLATARCH + '/sodium-native@' + pkg.version + '.bare'))
 
     const bootNode = new Boot(drive, { cwd: bare.cwd, absolutePrebuilds: true, isNode: true })
     await bootNode.warmup()
@@ -330,8 +331,8 @@ test('dynamic prebuilds depending on runtime - only .node prebuilds exists', asy
     t.ok(node.prebuilds['/node_modules/sodium-native'].endsWith('.node'))
 
     const local = new Localdrive(node.cwd)
-    t.ok(await local.entry('/prebuilds/sodium-native@' + pkg.version + '.node'))
-    t.absent(await local.entry('/prebuilds/sodium-native@' + pkg.version + '.bare'))
+    t.ok(await local.entry('/prebuilds/' + PLATARCH + '/sodium-native@' + pkg.version + '.node'))
+    t.absent(await local.entry('/prebuilds/' + PLATARCH + '/sodium-native@' + pkg.version + '.bare'))
 
     const bootBare = new Boot(drive, { cwd: node.cwd, absolutePrebuilds: true, isNode: false })
     await bootBare.warmup()
@@ -344,8 +345,8 @@ test('dynamic prebuilds depending on runtime - only .node prebuilds exists', asy
     t.ok(bare.prebuilds['/node_modules/sodium-native'].endsWith('.node')) // Bare is ok with using .node
 
     const local = new Localdrive(bare.cwd)
-    t.ok(await local.entry('/prebuilds/sodium-native@' + pkg.version + '.node'))
-    t.absent(await local.entry('/prebuilds/sodium-native@' + pkg.version + '.bare'))
+    t.ok(await local.entry('/prebuilds/' + PLATARCH + '/sodium-native@' + pkg.version + '.node'))
+    t.absent(await local.entry('/prebuilds/' + PLATARCH + '/sodium-native@' + pkg.version + '.bare'))
 
     const bootNode = new Boot(drive, { cwd: bare.cwd, absolutePrebuilds: true, isNode: true })
     await bootNode.warmup()
@@ -384,8 +385,8 @@ test('dynamic prebuilds depending on runtime - only .bare prebuilds exists', asy
     t.absent(node.prebuilds['/node_modules/sodium-native']) // There is no compatible prebuild for Node
 
     const local = new Localdrive(node.cwd)
-    t.absent(await local.entry('/prebuilds/sodium-native@' + pkg.version + '.node'))
-    t.ok(await local.entry('/prebuilds/sodium-native@' + pkg.version + '.bare'))
+    t.absent(await local.entry('/prebuilds/' + PLATARCH + '/sodium-native@' + pkg.version + '.node'))
+    t.ok(await local.entry('/prebuilds/' + PLATARCH + '/sodium-native@' + pkg.version + '.bare'))
 
     const bootBare = new Boot(drive, { cwd: node.cwd, absolutePrebuilds: true, isNode: false })
     await bootBare.warmup()
@@ -398,8 +399,8 @@ test('dynamic prebuilds depending on runtime - only .bare prebuilds exists', asy
     t.ok(bare.prebuilds['/node_modules/sodium-native'].endsWith('.bare'))
 
     const local = new Localdrive(bare.cwd)
-    t.absent(await local.entry('/prebuilds/sodium-native@' + pkg.version + '.node'))
-    t.ok(await local.entry('/prebuilds/sodium-native@' + pkg.version + '.bare'))
+    t.absent(await local.entry('/prebuilds/' + PLATARCH + '/sodium-native@' + pkg.version + '.node'))
+    t.ok(await local.entry('/prebuilds/' + PLATARCH + '/sodium-native@' + pkg.version + '.bare'))
 
     const bootNode = new Boot(drive, { cwd: bare.cwd, absolutePrebuilds: true, isNode: true })
     await bootNode.warmup()

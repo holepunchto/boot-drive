@@ -152,12 +152,13 @@ module.exports = class Boot {
         if (r.input === null || r.input === 'node-gyp-build') continue
 
         const isBuiltin = this.linker.builtins.has(r.input)
-        
-        if (isBuiltin || !r.output) {
-          dep.requires[r.input] = { output: r.output, isBuiltin }
-          if (r.output) stack.push(this.dependencies.get(r.output))
+
+        if (isBuiltin) {
+          dep.requires[r.input] = { output: r.input, isBuiltin }
           continue
         }
+
+        if (!r.output) throw new Error('Could not resolve ' + r.input)
 
         dep.requires[r.input] = { output: r.output }
 
