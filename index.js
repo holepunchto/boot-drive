@@ -155,6 +155,7 @@ module.exports = class Boot {
         
         if (isBuiltin || !r.output) {
           dep.requires[r.input] = { output: r.output, isBuiltin }
+          if (r.output) stack.push(this.dependencies.get(r.output))
           continue
         }
 
