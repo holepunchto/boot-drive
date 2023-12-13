@@ -45,8 +45,9 @@ Available `options`:
   additionalBuiltins: [], // For adding modules to be imported by Node's native `require`
   builtinsMap: {}, // mappings of core builtins, e.g. fs -> bare-fs
   sourceOverwrites: {}, // Key/Value object where you can map filenames to source code
-  platform: process.platform, // Used for the prebuilds sub-folder
-  arch: process.arch // Used for the prebuilds sub-folder
+  host: require.addon.host || process.platform + '-' + process.arch , // used for prebuilds sub-folder
+  platform: process.platform, // legacy
+  arch: process.arch // legacy
 }
 ```
 

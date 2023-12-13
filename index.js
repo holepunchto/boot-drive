@@ -1,10 +1,10 @@
 'use strict'
-
 const path = require('path')
 const fsp = require('fs/promises')
 const ScriptLinker = require('@holepunchto/script-linker')
 const unixResolve = require('unix-path-resolve')
 const { createBuiltins } = require('./defaults.js')
+const PREBUILDS_REGEX = /(^|\/)?prebuilds(\/|$)?/
 
 module.exports = class Boot {
   constructor (drive, opts = {}) {
@@ -26,25 +26,18 @@ module.exports = class Boot {
       builtins: createBuiltins(this.additionalBuiltins),
       resolveMap: this.builtinsMap === null ? null : (req) => Object.hasOwn(this.builtinsMap, req) ? this.builtinsMap[req] : null
     })
-
-    this.platform = opts.platform || process.platform
-    this.arch = opts.arch || process.arch
-
-    this._isNode = typeof opts.isNode === 'boolean' ? opts.isNode : !!process.versions.node
+    this.host = host(opts)
+    this.isNode = typeof opts.isNode === 'boolean' ? opts.isNode : typeof Bare === 'undefined'
   }
 
   async _savePrebuildToDisk (mod) {
-    const hasBuilds = resolve(mod, 'node-gyp-build')
-    if (!hasBuilds) return
-
-    const runtime = this._isNode ? 'node' : 'bare'
     const pkg = await mod.loadPackage()
 
-    let prebuild = await this._getLocalPrebuild(pkg, runtime)
-    if (!prebuild && runtime === 'bare') prebuild = await this._getLocalPrebuild(pkg, 'node')
+    if (!hasBuilds(pkg, mod)) return
 
+    const prebuild = await this._getLocalPrebuild(pkg)
     if (prebuild) {
-      this.prebuilds[mod.dirname] = prebuild.basename
+      this.prebuilds[mod.dirname] = prebuild.key
       return
     }
 
@@ -52,7 +45,7 @@ module.exports = class Boot {
     let dirname = mod.dirname
 
     while (true) {
-      const folder = dirname + '/prebuilds/' + this.platform + '-' + this.arch
+      const folder = dirname + '/prebuilds/' + this.host
 
       for await (const name of this.drive.readdir(folder)) {
         const type = getPrebuildType(name)
@@ -63,7 +56,7 @@ module.exports = class Boot {
 
           await this._saveLocalPrebuild(unixResolve(folder, name), info.filename)
 
-          prebuilds[type] = { dirname, basename: info.basename }
+          prebuilds[type] = { dirname, key: info.key }
         }
 
         // Avoid breaking the loop in case we want the state for future local queries
@@ -73,21 +66,27 @@ module.exports = class Boot {
       dirname = unixResolve(dirname, '..')
     }
 
-    const saved = this._isNode ? prebuilds.node : (prebuilds.bare || prebuilds.node)
+    const saved = this.isNode ? prebuilds.node : (prebuilds.bare || prebuilds.node)
     if (saved) {
-      this.prebuilds[saved.dirname] = saved.basename
+      this.prebuilds[saved.dirname] = saved.key
     }
   }
 
   _prebuildInfo (pkg, extension) {
     const basename = pkg.name.replace(/\//g, '+') + '@' + pkg.version + '.' + extension
-    const filename = path.resolve(this.cwd, 'prebuilds', basename)
-    return { basename, filename }
+    const rel = './prebuilds/' + this.host + '/' + basename
+    const filename = path.resolve(this.cwd, rel)
+    const key = this.absolutePrebuilds ? path.join(this.cwd, rel) : rel
+    return { basename, filename, key }
   }
 
-  async _getLocalPrebuild (pkg, extension) {
-    const info = this._prebuildInfo(pkg, extension)
-    const exists = await fileExists(info.filename)
+  async _getLocalPrebuild (pkg) {
+    let info = this._prebuildInfo(pkg, 'bare')
+    let exists = !this.isNode && await fileExists(info.filename)
+    if (!exists) {
+      info = this._prebuildInfo(pkg, 'node')
+      exists = await fileExists(info.filename)
+    }
     return exists ? info : null
   }
 
@@ -226,16 +225,16 @@ function run (run, ctx, mod) {
 }
 
 function createRequire (run, ctx, mod) {
-  const path = ctx.builtinRequire('path')
+  require.addon = addon
 
-  return function (req) {
-    if (req === 'node-gyp-build') {
-      return function (dirname) {
-        const prebuild = ctx.absolutePrebuilds ? path.resolve(ctx.cwd, 'prebuilds', ctx.prebuilds[dirname]) : './prebuilds/' + ctx.prebuilds[dirname]
-        return ctx.builtinRequire(prebuild)
-      }
-    }
-    if (req === 'addon' && process.versions.bare) return ctx.builtinRequire(req)
+  return require
+
+  function addon (dirname = mod.dirname) {
+    return ctx.builtinRequire(ctx.prebuilds[dirname])
+  }
+
+  function require (req) {
+    if (req === 'node-gyp-build') return require.addon
 
     const r = mod.requires[req]
 
@@ -248,6 +247,23 @@ function createRequire (run, ctx, mod) {
     const dep = ctx.dependencies[r.output]
     return run(run, ctx, dep)
   }
+}
+
+function host (opts) {
+  if (opts.host) return opts.host
+  if (opts.platform) return opts.platform + '-' + opts.arch
+  if (require.addon) return require.addon.host
+  return process.platform + '-' + process.arch
+}
+
+function hasBuilds (pkg, mod) {
+  if (Array.isArray(pkg?.files)) {
+    for (const file of pkg.files) {
+      if (PREBUILDS_REGEX.test(file)) return true
+    }
+  }
+
+  return !!resolve(mod, 'node-gyp-build')
 }
 
 function resolve (mod, input) {
