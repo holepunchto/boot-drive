@@ -5,6 +5,7 @@ const ScriptLinker = require('@holepunchto/script-linker')
 const unixResolve = require('unix-path-resolve')
 const { createBuiltins } = require('./defaults.js')
 const PREBUILDS_REGEX = /(^|\/)?prebuilds(\/|$)?/
+
 module.exports = class Boot {
   constructor (drive, opts = {}) {
     this.drive = drive
@@ -26,7 +27,7 @@ module.exports = class Boot {
       resolveMap: this.builtinsMap === null ? null : (req) => Object.hasOwn(this.builtinsMap, req) ? this.builtinsMap[req] : null
     })
     this.host = host(opts)
-    this.isNode = typeof opts.isNode === 'boolean' ? opts.isNode : (process.versions.node && !process.versions.bare)
+    this.isNode = typeof opts.isNode === 'boolean' ? opts.isNode : typeof Bare === 'undefined'
   }
 
   async _savePrebuildToDisk (mod) {
