@@ -92,8 +92,8 @@ module.exports = class Boot {
 
   _prebuildInfo (pkg, extension) {
     const basename = pkg.name.replace(/\//g, '+') + '@' + pkg.version + '.' + extension
-    const filename = path.resolve(this.cwd, 'prebuilds', this.host, basename)
     const rel = './prebuilds/' + this.host + '/' + basename
+    const filename = path.resolve(this.cwd, rel)
     const key = this.absolutePrebuilds ? path.join(this.cwd, rel) : rel
     return { basename, filename, key }
   }
@@ -243,8 +243,11 @@ function run (run, ctx, mod) {
 }
 
 function createRequire (run, ctx, mod) {
-  require.addon = () => {
-    return ctx.builtinRequire(ctx.prebuilds[mod.dirname])
+
+  require.addon = addon 
+  
+  function addon (dirname = mod.dirname) {
+    return ctx.builtinRequire(ctx.prebuilds[dirname])
   }
 
   function require (req) {
