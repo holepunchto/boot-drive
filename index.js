@@ -243,9 +243,10 @@ function run (run, ctx, mod) {
 }
 
 function createRequire (run, ctx, mod) {
+  require.addon = addon
 
-  require.addon = addon 
-  
+  return require
+
   function addon (dirname = mod.dirname) {
     return ctx.builtinRequire(ctx.prebuilds[dirname])
   }
@@ -264,8 +265,6 @@ function createRequire (run, ctx, mod) {
     const dep = ctx.dependencies[r.output]
     return run(run, ctx, dep)
   }
-
-  return require
 }
 
 function resolve (mod, input) {
