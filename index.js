@@ -25,10 +25,7 @@ module.exports = class Boot {
       builtins: createBuiltins(this.additionalBuiltins),
       resolveMap: this.builtinsMap === null ? null : (req) => Object.hasOwn(this.builtinsMap, req) ? this.builtinsMap[req] : null
     })
-
-    this.platform = opts.platform || process.platform
-    this.arch = opts.arch || process.arch
-
+    this.host = opts.host || (opts.platform ? opts.platform + '-' + opts.arch : require.addon ? require.addon.host : process.platform + '-' + process.arch)
     this._isNode = typeof opts.isNode === 'boolean' ? opts.isNode : (process.versions.node && !process.versions.bare)
   }
 
@@ -41,7 +38,7 @@ module.exports = class Boot {
 
     const prebuild = await this._getLocalPrebuild(pkg, runtime)
     if (prebuild) {
-      this.prebuilds[mod.dirname] = prebuild.basename
+      this.prebuilds[mod.dirname] = prebuild.key
       return
     }
 
@@ -49,7 +46,7 @@ module.exports = class Boot {
     let dirname = mod.dirname
 
     while (true) {
-      const folder = dirname + '/prebuilds/' + this.platform + '-' + this.arch
+      const folder = dirname + '/prebuilds/' + this.host
 
       for await (const name of this.drive.readdir(folder)) {
         const type = getPrebuildType(name)
@@ -60,7 +57,7 @@ module.exports = class Boot {
 
           await this._saveLocalPrebuild(unixResolve(folder, name), info.filename)
 
-          prebuilds[type] = { dirname, basename: info.basename }
+          prebuilds[type] = { dirname, key: info.key }
         }
 
         // Avoid breaking the loop in case we want the state for future local queries
@@ -72,19 +69,24 @@ module.exports = class Boot {
 
     const saved = this._isNode ? prebuilds.node : (prebuilds.bare || prebuilds.node)
     if (saved) {
-      this.prebuilds[saved.dirname] = saved.basename
+      this.prebuilds[saved.dirname] = saved.key
     }
   }
 
   _prebuildInfo (pkg, extension) {
     const basename = pkg.name.replace(/\//g, '+') + '@' + pkg.version + '.' + extension
-    const filename = path.resolve(this.cwd, 'prebuilds', process.platform + '-' + process.arch, basename)
-    return { basename, filename }
+    const filename = path.resolve(this.cwd, 'prebuilds', this.host, basename)
+    const key = this.absolutePrebuilds ? filename : path.resolve('prebuilds', this.host, basename)
+    return { basename, filename, key }
   }
 
   async _getLocalPrebuild (pkg) {
-    const info = this._prebuildInfo(pkg, 'bare') || this._prebuildInfo(pkg, 'node')
-    const exists = await fileExists(info.filename)
+    let info = this._prebuildInfo(pkg, 'bare')
+    let exists = await fileExists(info.filename)
+    if (!exists) {
+      info = this._prebuildInfo(pkg, 'node')
+      exists = await fileExists(info.filename)
+    }
     return exists ? info : null
   }
 
@@ -158,8 +160,6 @@ module.exports = class Boot {
           continue
         }
 
-        if (!r.output) throw new Error('Could not resolve ' + r.input)
-
         dep.requires[r.input] = { output: r.output }
 
         const d = this.dependencies.get(r.output)
@@ -225,16 +225,12 @@ function run (run, ctx, mod) {
 }
 
 function createRequire (run, ctx, mod) {
-  const path = ctx.builtinRequire('path')
+  require.addon = () => {
+    return ctx.builtinRequire(ctx.prebuilds[mod.dirname])
+  }
 
-  const require = function (req) {
-    if (req === 'node-gyp-build') {
-      return function (dirname) {
-        const platarch = process.platform + '-' + process.arch
-        const prebuild = ctx.absolutePrebuilds ? path.resolve(ctx.cwd, 'prebuilds', platarch, ctx.prebuilds[dirname]) : './prebuilds/' + platarch + '/' + ctx.prebuilds[dirname]
-        return ctx.builtinRequire(prebuild)
-      }
-    }
+  function require (req) {
+    if (req === 'node-gyp-build') return require.addon
 
     const r = mod.requires[req]
 
@@ -246,10 +242,6 @@ function createRequire (run, ctx, mod) {
 
     const dep = ctx.dependencies[r.output]
     return run(run, ctx, dep)
-  }
-
-  require.addon = (name) => {
-    return ctx.builtinRequire.addon(name)
   }
 
   return require
