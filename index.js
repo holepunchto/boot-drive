@@ -26,7 +26,7 @@ module.exports = class Boot {
       resolveMap: this.builtinsMap === null ? null : (req) => Object.hasOwn(this.builtinsMap, req) ? this.builtinsMap[req] : null
     })
     this.host = host(opts)
-    this._isNode = typeof opts.isNode === 'boolean' ? opts.isNode : (process.versions.node && !process.versions.bare)
+    this.isNode = typeof opts.isNode === 'boolean' ? opts.isNode : (process.versions.node && !process.versions.bare)
   }
 
   async _savePrebuildToDisk (mod) {
@@ -34,9 +34,7 @@ module.exports = class Boot {
 
     if (!hasBuilds(pkg, mod)) return
 
-    const runtime = this._isNode ? 'node' : 'bare'
-
-    const prebuild = await this._getLocalPrebuild(pkg, runtime)
+    const prebuild = await this._getLocalPrebuild(pkg)
     if (prebuild) {
       this.prebuilds[mod.dirname] = prebuild.key
       return
@@ -67,13 +65,13 @@ module.exports = class Boot {
       dirname = unixResolve(dirname, '..')
     }
 
-    const saved = this._isNode ? prebuilds.node : (prebuilds.bare || prebuilds.node)
+    const saved = this.isNode ? prebuilds.node : (prebuilds.bare || prebuilds.node)
     if (saved) {
       this.prebuilds[saved.dirname] = saved.key
     }
   }
 
-  _prebuildInfo (pkg, extension) {
+  _prebuildInfo (pkg, extension = 'bare') {
     const basename = pkg.name.replace(/\//g, '+') + '@' + pkg.version + '.' + extension
     const rel = './prebuilds/' + this.host + '/' + basename
     const filename = path.resolve(this.cwd, rel)
@@ -82,8 +80,8 @@ module.exports = class Boot {
   }
 
   async _getLocalPrebuild (pkg) {
-    let info = this._prebuildInfo(pkg, 'bare')
-    let exists = await fileExists(info.filename)
+    let info = this._prebuildInfo(pkg)
+    let exists = !this.isNode && await fileExists(info.filename)
     if (!exists) {
       info = this._prebuildInfo(pkg, 'node')
       exists = await fileExists(info.filename)
