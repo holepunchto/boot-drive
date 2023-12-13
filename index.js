@@ -152,7 +152,7 @@ module.exports = class Boot {
       }
 
       for (const r of mod.resolutions) {
-        if (r.input === 'node-gyp-build') continue
+        if (r.input === null || r.input === 'node-gyp-build') continue
 
         const isBuiltin = this.linker.builtins.has(r.input)
 
