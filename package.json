@@ -1,6 +1,6 @@
 {
   "name": "@holepunchto/boot-drive",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Run an app from a Hyperdrive or Localdrive",
   "main": "index.js",
   "files": [
