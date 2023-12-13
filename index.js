@@ -36,20 +36,10 @@ module.exports = class Boot {
     return process.platform + '-' + process.arch
   }
 
-  _hasBuilds (pkg, mod) {
-    if (Array.isArray(pkg?.files)) {
-      for (const file of pkg.files) {
-        if (PREBUILDS_REGEX.test(file)) return true
-      }
-    }
-
-    return !!resolve(mod, 'node-gyp-build')
-  }
-
   async _savePrebuildToDisk (mod) {
     const pkg = await mod.loadPackage()
 
-    if (!this._hasBuilds(pkg, mod)) return
+    if (!hasBuilds(pkg, mod)) return
 
     const runtime = this._isNode ? 'node' : 'bare'
 
@@ -265,6 +255,16 @@ function createRequire (run, ctx, mod) {
     const dep = ctx.dependencies[r.output]
     return run(run, ctx, dep)
   }
+}
+
+function hasBuilds (pkg, mod) {
+  if (Array.isArray(pkg?.files)) {
+    for (const file of pkg.files) {
+      if (PREBUILDS_REGEX.test(file)) return true
+    }
+  }
+
+  return !!resolve(mod, 'node-gyp-build')
 }
 
 function resolve (mod, input) {
