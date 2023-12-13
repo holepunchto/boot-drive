@@ -71,7 +71,7 @@ module.exports = class Boot {
     }
   }
 
-  _prebuildInfo (pkg, extension = 'bare') {
+  _prebuildInfo (pkg, extension) {
     const basename = pkg.name.replace(/\//g, '+') + '@' + pkg.version + '.' + extension
     const rel = './prebuilds/' + this.host + '/' + basename
     const filename = path.resolve(this.cwd, rel)
@@ -80,7 +80,7 @@ module.exports = class Boot {
   }
 
   async _getLocalPrebuild (pkg) {
-    let info = this._prebuildInfo(pkg)
+    let info = this._prebuildInfo(pkg, 'bare')
     let exists = !this.isNode && await fileExists(info.filename)
     if (!exists) {
       info = this._prebuildInfo(pkg, 'node')
