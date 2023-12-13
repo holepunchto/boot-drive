@@ -163,7 +163,8 @@ module.exports = class Boot {
 
         dep.requires[r.input] = { output: r.output }
 
-        stack.push(this.dependencies.get(r.output))
+        const d = this.dependencies.get(r.output)
+        if (d) stack.push(d)
       }
     }
 
