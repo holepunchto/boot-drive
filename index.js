@@ -4,7 +4,7 @@ const fsp = require('fs/promises')
 const ScriptLinker = require('@holepunchto/script-linker')
 const unixResolve = require('unix-path-resolve')
 const { createBuiltins } = require('./defaults.js')
-
+const PREBUILDS_REGEX = /(^|\/)?prebuilds(\/|$)?/
 module.exports = class Boot {
   constructor (drive, opts = {}) {
     this.drive = drive
@@ -29,10 +29,20 @@ module.exports = class Boot {
     this._isNode = typeof opts.isNode === 'boolean' ? opts.isNode : (process.versions.node && !process.versions.bare)
   }
 
+  _hasBuilds (pkg, mod) {
+    if (Array.isArray(pkg?.files)) {
+      for (const file of pkg.files) {
+        if (PREBUILDS_REGEX.test(file)) return true
+      }
+    }
+
+    return !!resolve(mod, 'node-gyp-build')
+  }
+
   async _savePrebuildToDisk (mod) {
     const pkg = await mod.loadPackage()
-    const hasBuilds = (Array.isArray(pkg?.files) && pkg.files.includes('prebuilds')) || !!resolve(mod, 'node-gyp-build')
-    if (!hasBuilds) return
+
+    if (!this._hasBuilds(pkg, mod)) return
 
     const runtime = this._isNode ? 'node' : 'bare'
 
