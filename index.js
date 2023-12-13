@@ -25,15 +25,8 @@ module.exports = class Boot {
       builtins: createBuiltins(this.additionalBuiltins),
       resolveMap: this.builtinsMap === null ? null : (req) => Object.hasOwn(this.builtinsMap, req) ? this.builtinsMap[req] : null
     })
-    this.host = this._host(opts)
+    this.host = host(opts)
     this._isNode = typeof opts.isNode === 'boolean' ? opts.isNode : (process.versions.node && !process.versions.bare)
-  }
-
-  _host (opts) {
-    if (opts.host) return opts.host
-    if (opts.platform) return opts.platform + '-' + opts.arch
-    if (require.addon) return require.addon.host
-    return process.platform + '-' + process.arch
   }
 
   async _savePrebuildToDisk (mod) {
@@ -255,6 +248,13 @@ function createRequire (run, ctx, mod) {
     const dep = ctx.dependencies[r.output]
     return run(run, ctx, dep)
   }
+}
+
+function host (opts) {
+  if (opts.host) return opts.host
+  if (opts.platform) return opts.platform + '-' + opts.arch
+  if (require.addon) return require.addon.host
+  return process.platform + '-' + process.arch
 }
 
 function hasBuilds (pkg, mod) {
