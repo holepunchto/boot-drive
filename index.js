@@ -25,8 +25,15 @@ module.exports = class Boot {
       builtins: createBuiltins(this.additionalBuiltins),
       resolveMap: this.builtinsMap === null ? null : (req) => Object.hasOwn(this.builtinsMap, req) ? this.builtinsMap[req] : null
     })
-    this.host = opts.host || (opts.platform ? opts.platform + '-' + opts.arch : require.addon ? require.addon.host : process.platform + '-' + process.arch)
+    this.host = this._host(opts)
     this._isNode = typeof opts.isNode === 'boolean' ? opts.isNode : (process.versions.node && !process.versions.bare)
+  }
+
+  _host (opts) {
+    if (opts.host) return opts.host
+    if (opts.platform) return opts.platform + '-' + opts.arch
+    if (require.addon) return require.addon.host
+    return process.platform + '-' + process.arch
   }
 
   _hasBuilds (pkg, mod) {
