@@ -182,7 +182,6 @@ module.exports = class Boot {
 
       const __BOOTDRIVE__ = {
         cwd: ${JSON.stringify(this.absolutePrebuilds ? this.cwd : null)},
-        host: ${JSON.stringify(this.host)},
         absolutePrebuilds: ${JSON.stringify(this.absolutePrebuilds)},
         prebuilds: ${JSON.stringify(this.prebuilds, null, 2)},
         dependencies: ${JSON.stringify(dependencies, null, 2)},
@@ -226,7 +225,7 @@ function run (run, ctx, mod) {
 }
 
 function createRequire (run, ctx, mod) {
-  addon.host = ctx.host
+  addon.host = ctx.builtinRequire.addon?.host
   require.addon = addon
   return require
 
