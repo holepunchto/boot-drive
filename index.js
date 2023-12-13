@@ -156,8 +156,8 @@ module.exports = class Boot {
 
         const isBuiltin = this.linker.builtins.has(r.input)
 
-        if (isBuiltin || !r.output) {
-          dep.requires[r.input] = { output: r.output, isBuiltin }
+        if (isBuiltin) {
+          dep.requires[r.input] = { output: r.input, isBuiltin }
           continue
         }
 
