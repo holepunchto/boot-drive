@@ -820,7 +820,7 @@ test('circuit breaks self-referential dep-trees', async function (t) {
 
   const boot = new Boot(drive, { cwd: createTmpDir(t) })
   await boot.warmup()
-  
+
   t.alike(boot.start(), {})
   t.pass('successfully started')
   t.alike(exec(boot.stringify()), {})
