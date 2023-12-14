@@ -225,8 +225,8 @@ function run (run, ctx, mod) {
 }
 
 function createRequire (run, ctx, mod) {
+  addon.host = ctx.builtinRequire.addon?.host
   require.addon = addon
-
   return require
 
   function addon (dirname = mod.dirname) {
