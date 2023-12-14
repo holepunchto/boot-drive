@@ -163,7 +163,7 @@ module.exports = class Boot {
         dep.requires[r.input] = { output: r.output }
 
         const d = this.dependencies.get(r.output)
-        if (d) stack.push(d)
+        if (d && !Object.hasOwn(dependencies, d.filename)) stack.push(d)
       }
     }
 
