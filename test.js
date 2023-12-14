@@ -805,6 +805,28 @@ test('builtinsMap', async function (t) {
   t.alike(exec(source), { assert: true })
 })
 
+test('circuit breaks self-referential dep-trees', async function (t) {
+  t.plan(4)
+
+  const [drive] = create()
+
+  await drive.put('/other.js', Buffer.from(`
+    module.exports = require('./index.js')
+  `))
+
+  await drive.put('/index.js', Buffer.from(`
+    module.exports = require('./other.js')
+  `))
+
+  const boot = new Boot(drive, { cwd: createTmpDir(t) })
+  await boot.warmup()
+
+  t.alike(boot.start(), {})
+  t.pass('successfully started')
+  t.alike(exec(boot.stringify()), {})
+  t.pass('successfully executed from stringified')
+})
+
 async function replicate (t, bootstrap, corestore, drive, { server = false, client = false } = {}) {
   await drive.ready()
 
