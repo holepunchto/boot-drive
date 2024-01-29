@@ -1,7 +1,7 @@
 'use strict'
 const path = require('path')
 const fsp = require('fs/promises')
-const ScriptLinker = require('@holepunchto/script-linker')
+const ScriptLinker = require('script-linker')
 const unixResolve = require('unix-path-resolve')
 const { createBuiltins } = require('./defaults.js')
 const PREBUILDS_REGEX = /(^|\/)?prebuilds(\/|$)?/
