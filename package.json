@@ -16,6 +16,10 @@
       "bare": "bare-fs",
       "default": "fs"
     },
+    "fs/*": {
+      "bare": "bare-fs/*",
+      "default": "fs/*"
+    },
     "path": {
       "bare": "bare-path",
       "default": "path"
