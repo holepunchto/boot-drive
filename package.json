@@ -11,6 +11,16 @@
     "test": "standard && brittle test.js",
     "lint": "standard"
   },
+  "imports": {
+    "fs": {
+      "bare": "bare-fs",
+      "default": "fs"
+    },
+    "path": {
+      "bare": "bare-path",
+      "default": "path"
+    }
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/holepunchto/boot-drive.git"
