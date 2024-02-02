@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/holepunchto/boot-drive",
   "dependencies": {
+    "bare-bundle": "^1.0.0",
     "script-linker": "^2.0.0",
     "unix-path-resolve": "^1.0.2"
   },

@@ -1,6 +1,7 @@
 'use strict'
 const path = require('path')
 const fsp = require('fs/promises')
+const Bundle = require('bare-bundle')
 const ScriptLinker = require('script-linker')
 const unixResolve = require('unix-path-resolve')
 const { createBuiltins } = require('./defaults.js')
@@ -199,6 +200,32 @@ module.exports = class Boot {
       ${createRequire.toString().replace('createRequire', '__BOOTDRIVE_CREATE_REQUIRE__')}
     })()
     `.trim()
+  }
+
+  bundle (entrypoint) {
+    entrypoint = entrypoint ? unixResolve('/', entrypoint) : this.entrypoint
+
+    const mod = this.dependencies.get(entrypoint)
+    const b = new Bundle()
+
+    b.main = entrypoint
+
+    const seen = new Set()
+    const stack = [mod]
+
+    while (stack.length) {
+      const mod = stack.pop()
+
+      b.write(mod.filename, mod.source)
+      seen.add(mod.filename)
+
+      for (const r of mod.resolutions) {
+        const d = this.dependencies.get(r.output)
+        if (d && !seen.has(d.filename) && !d.builtin) stack.push(d)
+      }
+    }
+
+    return b
   }
 }
 
